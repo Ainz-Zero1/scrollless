@@ -1,6 +1,667 @@
 <!DOCTYPE html>
-<html>
+
+<html lang="de">
 <head>
-<meta http-equiv="refresh" content="0; url=/scrollless.html">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Scrollless</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{background:#050508;font-family:'Space Grotesk',sans-serif;color:#fff;min-height:100vh}
+    input,button{font-family:'Space Grotesk',sans-serif}
+    ::-webkit-scrollbar{width:0}
+    input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+
+```
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+.fu{animation:fadeUp 0.4s ease both}
+.fu1{animation:fadeUp 0.4s 0.08s ease both;opacity:0}
+.fu2{animation:fadeUp 0.4s 0.16s ease both;opacity:0}
+
+.screen{display:none;min-height:100vh;max-width:480px;margin:0 auto}
+.screen.active{display:block}
+
+.spinner{width:28px;height:28px;border-radius:50%;border:2px solid #ff3b5c;border-top-color:transparent;animation:spin 0.7s linear infinite;margin:0 auto}
+
+.btn{border:none;border-radius:14px;font-family:'Space Grotesk',sans-serif;font-weight:700;cursor:pointer;transition:all 0.15s ease;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px 22px;font-size:15px}
+.btn-primary{background:linear-gradient(135deg,#ff3b5c,#ff6b35);color:#fff}
+.btn-ghost{background:#0a0a18;border:1px solid #1e1e35;color:#888}
+.btn-yellow{background:linear-gradient(135deg,#ffe14d,#ff8c42);color:#000}
+.btn-small{background:#0a0a18;border:1px solid #1e1e35;color:#666;padding:8px 14px;font-size:12px;width:auto}
+.btn:disabled{opacity:0.4;cursor:not-allowed}
+.btn:active{transform:scale(0.97)}
+
+.inp{width:100%;background:#0a0a18;border:1px solid #1e1e35;border-radius:12px;padding:13px 16px;color:#fff;font-size:14px;outline:none;transition:border 0.2s;font-family:'Space Grotesk',sans-serif}
+.inp:focus{border-color:#ff3b5c66}
+
+.logo span{background:linear-gradient(135deg,#ff3b5c,#ff6b35);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+/* Auth */
+#authScreen{padding:60px 24px 40px}
+.tab-bar{display:flex;gap:4px;background:#080810;border:1px solid #111;border-radius:12px;padding:4px;margin-bottom:24px}
+.tab-btn{flex:1;padding:9px 0;border-radius:9px;border:none;background:transparent;color:#333;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:all 0.2s}
+.tab-btn.active{background:linear-gradient(135deg,#ff3b5c,#ff6b35);color:#fff}
+
+/* Group */
+#groupScreen{padding:60px 24px 40px}
+.group-option{background:#0a0a18;border:1px solid #1e1e35;border-radius:16px;padding:20px;text-align:left;cursor:pointer;width:100%;margin-bottom:12px;transition:border 0.2s}
+.group-option:hover{border-color:#ff3b5c44}
+.group-option h3{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#fff;margin-bottom:4px}
+.group-option p{font-size:13px;color:#444}
+
+/* App */
+#appScreen{padding-bottom:80px}
+.header{padding:52px 16px 16px;background:linear-gradient(180deg,#0a0a18,#050508)}
+.header-top{display:flex;justify-content:space-between;align-items:center}
+.logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:24px;letter-spacing:-0.5px}
+.group-label{font-size:12px;color:#333;margin-top:2px}
+
+.my-card{background:linear-gradient(135deg,#0f0f1e,#1a0a0f);border:1px solid #ff3b5c22;border-radius:18px;padding:18px;margin-bottom:12px;box-shadow:0 4px 30px #ff3b5c10}
+.my-card-inner{display:flex;align-items:center;gap:14px}
+.avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;flex-shrink:0}
+.avatar.glow{background:linear-gradient(135deg,#ff3b5c,#ff6b35);box-shadow:0 0 14px #ff3b5c55}
+.avatar.dark{background:#0d0d1a;border:2px solid #1e1e35;color:#555}
+
+.score-bar-wrap{height:3px;background:#111;border-radius:2px;overflow:hidden;width:100%}
+.score-bar-fill{height:100%;border-radius:2px;transition:width 1s ease}
+
+.leaderboard-row{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:14px;position:relative;overflow:hidden;margin-bottom:8px;transition:all 0.2s}
+.leaderboard-row.me{background:#0f0f1e;border:1px solid #ff3b5c33}
+.leaderboard-row.other{background:#080810;border:1px solid #0d0d1a}
+.me-bar{position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,#ff3b5c,#ff6b35)}
+.me-tag{font-size:9px;color:#ff3b5c;background:#ff3b5c22;padding:2px 6px;border-radius:4px;font-weight:700}
+
+.nudge{background:#050f1a;border:1px solid #4d9fff22;border-radius:12px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:10px;font-size:13px;color:#4d9fff}
+
+.invite-box{background:#080810;border:1px solid #111;border-radius:12px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.invite-code{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;letter-spacing:2px}
+
+.tabs{display:flex;gap:4px;background:#080810;border:1px solid #111;border-radius:12px;padding:4px;margin-bottom:14px}
+.tab{flex:1;padding:9px 0;border-radius:9px;border:none;background:transparent;color:#333;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:all 0.2s}
+.tab.active{background:linear-gradient(135deg,#ff3b5c,#ff6b35);color:#fff}
+
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#080810;border-top:1px solid #111;display:flex;padding:10px 0 22px;z-index:100}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border:none;background:transparent;cursor:pointer;padding:4px 0;opacity:0.3;transition:opacity 0.2s}
+.nav-btn.active{opacity:1}
+.nav-btn span{font-size:20px}
+.nav-btn small{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:10px;color:#fff}
+.nav-btn.active small{color:#ff3b5c}
+
+/* Panels */
+.panel{display:none;padding:0 16px}
+.panel.active{display:block}
+
+/* Stats */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.stat-card{background:#080810;border:1px solid #111;border-radius:14px;padding:14px}
+.stat-label{font-size:11px;color:#333;margin-bottom:6px}
+.stat-value{font-family:'Syne',sans-serif;font-weight:800;font-size:22px}
+.chart-bar-wrap{display:flex;align-items:flex-end;gap:6px;height:90px}
+.chart-bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+.chart-fill{width:100%;border-radius:4px 4px 0 0;min-height:4px;transition:height 1s ease}
+.chart-label{font-size:9px;color:#333}
+
+/* Premium modal */
+.modal-overlay{position:fixed;inset:0;background:#000c;z-index:1000;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{width:100%;max-width:480px;background:#0a0a18;border-radius:24px 24px 0 0;padding:32px 24px 48px;border:1px solid #1e1e35;animation:slideUp 0.3s ease}
+.feature-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+
+/* Toast */
+#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#111122;border:1px solid #1e1e35;border-radius:12px;padding:12px 20px;font-size:13px;color:#fff;z-index:9999;white-space:nowrap;display:none}
+
+.error-msg{color:#ff3b5c;font-size:13px;margin-top:4px}
+.section-title{font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:#fff;margin-bottom:4px}
+.section-sub{color:#333;font-size:13px;margin-bottom:24px}
+```
+
+  </style>
 </head>
+<body>
+
+<!-- TOAST -->
+
+<div id="toast"></div>
+
+<!-- AUTH SCREEN -->
+
+<div id="authScreen" class="screen active">
+  <div class="fu" style="margin-bottom:40px">
+    <div class="logo-text logo" style="font-family:'Syne',sans-serif;font-size:38px;letter-spacing:-1.5px">scroll<span>less</span></div>
+    <p style="color:#333;font-size:14px;margin-top:6px">Weniger scrollen. Besser ranken.</p>
+  </div>
+  <div class="fu1">
+    <div class="tab-bar" style="margin-bottom:24px">
+      <button class="tab-btn active" onclick="setAuthMode('login')">Einloggen</button>
+      <button class="tab-btn" onclick="setAuthMode('register')">Registrieren</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
+      <input id="authName" class="inp" placeholder="Dein Name (z.B. Leon)" style="display:none"/>
+      <input id="authEmail" class="inp" placeholder="E-Mail" type="email"/>
+      <input id="authPw" class="inp" placeholder="Passwort" type="password"/>
+      <div id="authErr" class="error-msg" style="display:none"></div>
+    </div>
+    <button class="btn btn-primary" id="authBtn" onclick="handleAuth()">Einloggen →</button>
+  </div>
+</div>
+
+<!-- GROUP SCREEN -->
+
+<div id="groupScreen" class="screen">
+  <div class="fu" style="margin-bottom:32px">
+    <div style="font-size:40px;margin-bottom:12px">👥</div>
+    <h1 style="font-family:'Syne',sans-serif;font-weight:800;font-size:26px;margin-bottom:6px">Deine Gruppe</h1>
+    <p style="color:#444;font-size:14px">Erstelle eine Gruppe oder tritt einer bei</p>
+  </div>
+  <div id="groupOptions">
+    <button class="group-option" onclick="showGroupMode('create')">
+      <h3>✨ Neue Gruppe erstellen</h3>
+      <p>Erstelle eine Gruppe und lade Freunde ein</p>
+    </button>
+    <button class="group-option" onclick="showGroupMode('join')">
+      <h3>🔗 Gruppe beitreten</h3>
+      <p>Gib den Einladungscode deiner Freunde ein</p>
+    </button>
+  </div>
+  <div id="groupCreate" style="display:none;flex-direction:column;gap:12px">
+    <input id="groupNameInp" class="inp" placeholder="Gruppenname (z.B. Berlin Crew)"/>
+    <div id="groupErr" class="error-msg" style="display:none"></div>
+    <button class="btn btn-primary" onclick="createGroup()">Gruppe erstellen →</button>
+    <button class="btn btn-ghost" onclick="showGroupMode('options')">← Zurück</button>
+  </div>
+  <div id="groupJoin" style="display:none;flex-direction:column;gap:12px">
+    <input id="groupCodeInp" class="inp" placeholder="Einladungscode (z.B. AB12CD)"/>
+    <div id="groupJoinErr" class="error-msg" style="display:none"></div>
+    <button class="btn btn-primary" onclick="joinGroup()">Beitreten →</button>
+    <button class="btn btn-ghost" onclick="showGroupMode('options')">← Zurück</button>
+  </div>
+</div>
+
+<!-- APP SCREEN -->
+
+<div id="appScreen" class="screen">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="logo-text logo" style="font-family:'Syne',sans-serif;font-size:24px">scroll<span>less</span></div>
+        <div class="group-label" id="groupLabel">Gruppe laden...</div>
+      </div>
+      <button class="btn btn-small" id="proBtn" onclick="openPremium()" style="display:none">⭐ Pro</button>
+    </div>
+  </div>
+
+  <!-- HOME PANEL -->
+
+  <div id="homePanel" class="panel active" style="padding:0 16px">
+    <div class="my-card fu">
+      <div class="my-card-inner">
+        <div class="avatar glow" id="myAvatar" style="width:52px;height:52px;font-size:20px;color:#fff;border:2px solid #ff3b5c">?</div>
+        <div style="flex:1">
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:17px;margin-bottom:3px" id="myName">–</div>
+          <div style="font-size:13px;margin-bottom:5px" id="myStatus" style="color:#444">Noch keine Eingabe</div>
+          <div id="myStreak" style="display:none;background:#1a1500;border:1px solid #ffe14d33;border-radius:6px;padding:3px 8px;font-size:11px;color:#ffe14d;display:inline-block"></div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:32px;line-height:1" id="myMinutesDisplay">–</div>
+          <div style="font-size:11px;color:#333;margin-top:4px" id="myRankDisplay"></div>
+        </div>
+      </div>
+      <div class="score-bar-wrap" style="margin-top:14px"><div class="score-bar-fill" id="myBar" style="width:0%;background:#333"></div></div>
+      <button onclick="toggleInput()" style="margin-top:14px;width:100%;padding:10px;background:#ffffff08;border:1px solid #ffffff08;border-radius:10px;color:#555;font-size:12px;cursor:pointer" id="inputToggle">✏️ Minuten eintragen</button>
+      <div id="inputArea" style="display:none;margin-top:10px;display:none">
+        <div style="display:flex;gap:8px">
+          <input type="number" id="minutesInp" class="inp" placeholder="z.B. 45" style="padding:11px 14px"/>
+          <button class="btn btn-primary" onclick="saveMinutes()" style="width:auto;border-radius:10px;padding:11px 18px;flex-shrink:0">✓</button>
+        </div>
+      </div>
+    </div>
+
+```
+<div id="nudgeBanner" style="display:none" class="nudge fu1">
+  <span style="font-size:16px">⚡</span>
+  <span id="nudgeText"></span>
+</div>
+
+<div class="invite-box fu2" id="inviteBox" style="display:none">
+  <div>
+    <div style="font-size:11px;color:#333;margin-bottom:2px">Einladungscode</div>
+    <div class="invite-code" id="inviteCodeDisplay">–</div>
+  </div>
+  <button class="btn btn-small" onclick="copyCode()">Kopieren</button>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="setTab('day',this)">Heute</button>
+  <button class="tab" onclick="setTab('week',this)">Diese Woche</button>
+</div>
+
+<div id="leaderboard">
+  <div style="text-align:center;padding:40px 0;color:#333;font-size:14px">Lade Leaderboard...</div>
+</div>
+```
+
+  </div>
+
+  <!-- STATS PANEL -->
+
+  <div id="statsPanel" class="panel" style="padding:52px 16px 0">
+    <div class="fu">
+      <div class="section-title">Stats</div>
+      <div class="section-sub">Deine letzten 7 Tage</div>
+    </div>
+    <div class="my-card fu1" style="margin-bottom:14px">
+      <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;color:#fff;font-size:14px;margin-bottom:16px">Verlauf</div>
+      <div class="chart-bar-wrap" id="chartBars"></div>
+    </div>
+    <div class="stat-grid" id="statCards"></div>
+    <div id="proUpsell" class="my-card" style="display:none">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#ffe14d;margin-bottom:6px">⭐ Pro für 0,99€/Monat</div>
+      <p style="font-size:13px;color:#555;margin-bottom:14px">Mehrere Gruppen · alle Challenges · detailliertere Stats</p>
+      <button class="btn btn-yellow" onclick="openPremium()">Jetzt upgraden</button>
+    </div>
+  </div>
+
+  <!-- PROFILE PANEL -->
+
+  <div id="profilePanel" class="panel" style="padding:52px 16px 0">
+    <div class="fu" style="margin-bottom:28px">
+      <div class="section-title">Profil</div>
+    </div>
+    <div class="my-card fu1" style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+        <div class="avatar glow" id="profileAvatar" style="width:56px;height:56px;font-size:22px;color:#fff;border:2px solid #ff3b5c">?</div>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px" id="profileName">–</div>
+          <div style="font-size:13px;color:#444" id="profileUsername">–</div>
+        </div>
+      </div>
+      <div style="background:#050508;border-radius:12px;padding:12px 14px" id="profileGroup"></div>
+    </div>
+    <div style="margin-bottom:14px" id="profileProBtn" style="display:none">
+      <button class="btn btn-yellow" onclick="openPremium()">⭐ Auf Pro upgraden – 0,99€/Monat</button>
+    </div>
+    <button class="btn btn-ghost" onclick="handleSignOut()" style="border:1px solid #ff3b5c33;color:#ff3b5c;background:#ff3b5c15">Ausloggen</button>
+  </div>
+
+  <!-- BOTTOM NAV -->
+
+  <div class="bottom-nav">
+    <button class="nav-btn active" onclick="setNav('home',this)" id="navHome">
+      <span>🏆</span><small>Ranking</small>
+    </button>
+    <button class="nav-btn" onclick="setNav('stats',this)" id="navStats">
+      <span>📊</span><small>Stats</small>
+    </button>
+    <button class="nav-btn" onclick="setNav('profile',this)" id="navProfile">
+      <span>👤</span><small>Profil</small>
+    </button>
+  </div>
+</div>
+
+<!-- PREMIUM MODAL -->
+
+<div class="modal-overlay" id="premiumModal" onclick="closePremium()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:44px;margin-bottom:8px">⭐</div>
+      <h2 style="font-family:'Syne',sans-serif;font-size:24px;margin-bottom:6px">scrollless Pro</h2>
+      <p style="color:#444;font-size:13px">Für echte Leaderboard-Krieger</p>
+    </div>
+    <div style="margin-bottom:24px">
+      <div class="feature-row"><span style="color:#00e5a0;font-weight:700">✓</span><span style="font-size:14px;color:#aaa">Mehrere Gruppen gleichzeitig</span></div>
+      <div class="feature-row"><span style="color:#00e5a0;font-weight:700">✓</span><span style="font-size:14px;color:#aaa">Alle Apps tracken</span></div>
+      <div class="feature-row"><span style="color:#00e5a0;font-weight:700">✓</span><span style="font-size:14px;color:#aaa">Alle Challenges freischalten</span></div>
+      <div class="feature-row"><span style="color:#00e5a0;font-weight:700">✓</span><span style="font-size:14px;color:#aaa">Detaillierte Wochenstats</span></div>
+      <div class="feature-row"><span style="color:#00e5a0;font-weight:700">✓</span><span style="font-size:14px;color:#aaa">Custom Badges & Profil</span></div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost" onclick="closePremium()" style="flex:1">Abbrechen</button>
+      <button class="btn btn-yellow" onclick="buyPremium()" style="flex:2">0,99€ / Monat</button>
+    </div>
+    <p style="text-align:center;font-size:10px;color:#222;margin-top:12px">Zahlung via Stripe · jederzeit kündbar</p>
+  </div>
+</div>
+
+<!-- FIREBASE -->
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, collection, query, where, onSnapshot, updateDoc, addDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCb6xNqH1oSfmShLQMguOxo49nAzwwioWk",
+  authDomain: "scrollless0.firebaseapp.com",
+  projectId: "scrollless0",
+  storageBucket: "scrollless0.firebasestorage.app",
+  messagingSenderId: "955126183227",
+  appId: "1:955126183227:web:249e6d8257c34d7326b31e"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// ── HELPERS ──────────────────────────────────────────────────
+const today = () => new Date().toISOString().slice(0,10);
+const fmt   = m => m < 60 ? m+"m" : Math.floor(m/60)+"h"+(m%60?" "+m%60+"m":"");
+const TIERS = [
+  {max:30,  score:100, label:"Fokus-Held 🧠",  color:"#00e5a0"},
+  {max:60,  score:70,  label:"Gut dabei ✌️",   color:"#ffe14d"},
+  {max:120, score:30,  label:"Aufs Limit ⚠️",  color:"#ff8c42"},
+  {max:1e9, score:0,   label:"Abgestürzt 💀",  color:"#ff3b5c"},
+];
+const tier = m => TIERS.find(t => m < t.max);
+const rEmoji = r => r===1?"🥇":r===2?"🥈":r===3?"🥉":"#"+r;
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.style.display = "block";
+  setTimeout(() => t.style.display = "none", 2500);
+}
+
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+// ── STATE ────────────────────────────────────────────────────
+let currentUser = null, userData = null, groupData = null, members = [];
+let isPremium = false, unsubMembers = null;
+window._authMode = "login";
+
+// ── AUTH ─────────────────────────────────────────────────────
+window.setAuthMode = function(mode) {
+  window._authMode = mode;
+  document.querySelectorAll(".tab-btn").forEach((b,i) => b.classList.toggle("active", (i===0&&mode==="login")||(i===1&&mode==="register")));
+  document.getElementById("authName").style.display = mode==="register" ? "block" : "none";
+  document.getElementById("authBtn").textContent = mode==="login" ? "Einloggen →" : "Account erstellen →";
+}
+
+window.handleAuth = async function() {
+  const btn = document.getElementById("authBtn");
+  const err = document.getElementById("authErr");
+  const email = document.getElementById("authEmail").value;
+  const pw = document.getElementById("authPw").value;
+  const name = document.getElementById("authName").value;
+  err.style.display = "none";
+  btn.textContent = "..."; btn.disabled = true;
+  try {
+    if (window._authMode === "register") {
+      if (!name.trim()) throw {message:"Bitte Namen eingeben"};
+      const cred = await createUserWithEmailAndPassword(auth, email, pw);
+      await updateProfile(cred.user, {displayName: name.trim()});
+      await setDoc(doc(db,"users",cred.user.uid), {
+        name: name.trim(),
+        username: name.trim().toLowerCase().replace(/\s+/g,"_"),
+        email, streak:0, badges:[], createdAt: serverTimestamp()
+      });
+    } else {
+      await signInWithEmailAndPassword(auth, email, pw);
+    }
+  } catch(e) {
+    const msgs = {
+      "auth/email-already-in-use":"E-Mail bereits registriert",
+      "auth/invalid-email":"Ungültige E-Mail",
+      "auth/weak-password":"Passwort zu kurz (min. 6 Zeichen)",
+      "auth/invalid-credential":"E-Mail oder Passwort falsch",
+    };
+    err.textContent = msgs[e.code] || e.message;
+    err.style.display = "block";
+    btn.textContent = window._authMode==="login" ? "Einloggen →" : "Account erstellen →";
+    btn.disabled = false;
+  }
+}
+
+window.handleSignOut = async function() {
+  if (unsubMembers) unsubMembers();
+  await signOut(auth);
+}
+
+// ── GROUP ────────────────────────────────────────────────────
+window.showGroupMode = function(mode) {
+  document.getElementById("groupOptions").style.display = mode==="options" ? "block" : "none";
+  document.getElementById("groupCreate").style.display  = mode==="create"  ? "flex"  : "none";
+  document.getElementById("groupJoin").style.display    = mode==="join"    ? "flex"  : "none";
+}
+
+window.createGroup = async function() {
+  const name = document.getElementById("groupNameInp").value.trim();
+  const err  = document.getElementById("groupErr");
+  if (!name) { err.textContent="Gruppenname eingeben"; err.style.display="block"; return; }
+  err.style.display = "none";
+  try {
+    const code = Math.random().toString(36).slice(2,8).toUpperCase();
+    const ref  = await addDoc(collection(db,"groups"), {
+      name, inviteCode:code, createdBy:currentUser.uid,
+      members:[currentUser.uid], createdAt:serverTimestamp()
+    });
+    await updateDoc(doc(db,"users",currentUser.uid), {groupId:ref.id});
+    showToast("✓ Gruppe erstellt!");
+  } catch(e){ err.textContent=e.message; err.style.display="block"; }
+}
+
+window.joinGroup = async function() {
+  const code = document.getElementById("groupCodeInp").value.trim().toUpperCase();
+  const err  = document.getElementById("groupJoinErr");
+  if (!code) { err.textContent="Code eingeben"; err.style.display="block"; return; }
+  err.style.display = "none";
+  try {
+    const q    = query(collection(db,"groups"), where("inviteCode","==",code));
+    const snap = await getDocs(q);
+    if (snap.empty) { err.textContent="Kein Gruppe gefunden"; err.style.display="block"; return; }
+    const grp  = snap.docs[0];
+    const mems = grp.data().members || [];
+    if (!mems.includes(currentUser.uid))
+      await updateDoc(doc(db,"groups",grp.id), {members:[...mems,currentUser.uid]});
+    await updateDoc(doc(db,"users",currentUser.uid), {groupId:grp.id});
+    showToast("✓ Gruppe beigetreten!");
+  } catch(e){ err.textContent=e.message; err.style.display="block"; }
+}
+
+// ── MINUTES ──────────────────────────────────────────────────
+window.toggleInput = function() {
+  const a = document.getElementById("inputArea");
+  const open = a.style.display === "flex";
+  a.style.display = open ? "none" : "flex";
+  document.getElementById("inputToggle").textContent = open ? "✏️ Minuten eintragen" : "↑ Schließen";
+}
+
+window.saveMinutes = async function() {
+  const m = parseInt(document.getElementById("minutesInp").value);
+  if (isNaN(m)||m<0||m>1440) { showToast("⚠️ Ungültige Zahl"); return; }
+  try {
+    const scores   = {...(userData?.scores||{}), [today()]:m};
+    const yesterday = new Date(Date.now()-86400000).toISOString().slice(0,10);
+    const streak   = userData?.scores?.[yesterday]!==undefined ? (userData?.streak||0)+1 : 1;
+    await updateDoc(doc(db,"users",currentUser.uid), {scores, streak});
+    document.getElementById("inputArea").style.display = "none";
+    document.getElementById("inputToggle").textContent = "✏️ Aktualisieren";
+    showToast("✓ Gespeichert!");
+  } catch(e){ showToast("Fehler: "+e.message); }
+}
+
+// ── RENDER ───────────────────────────────────────────────────
+function renderHome() {
+  if (!userData) return;
+  const todayStr  = today();
+  const myMinutes = userData?.scores?.[todayStr] ?? null;
+  const myTier    = myMinutes !== null ? tier(myMinutes) : null;
+
+  document.getElementById("myAvatar").textContent = (userData.name||"?")[0].toUpperCase();
+  document.getElementById("myName").textContent   = userData.name || "–";
+
+  if (myMinutes !== null) {
+    document.getElementById("myStatus").textContent = myTier.label;
+    document.getElementById("myStatus").style.color = myTier.color;
+    document.getElementById("myMinutesDisplay").textContent = fmt(myMinutes);
+    document.getElementById("myMinutesDisplay").style.color = myTier.color;
+    document.getElementById("myBar").style.width   = Math.min(100,(myMinutes/180)*100)+"%";
+    document.getElementById("myBar").style.background = myTier.color;
+  }
+
+  const streak = userData?.streak || 0;
+  const streakEl = document.getElementById("myStreak");
+  if (streak > 0) { streakEl.textContent = "🔥 "+streak+" Tage Streak"; streakEl.style.display="inline-block"; }
+
+  if (groupData) {
+    document.getElementById("groupLabel").textContent = groupData.name+" · "+members.length+" Mitglieder";
+    document.getElementById("inviteBox").style.display = "flex";
+    document.getElementById("inviteCodeDisplay").textContent = groupData.inviteCode;
+  }
+
+  // Leaderboard
+  const sorted = [...members]
+    .map(m => ({...m, minutes: m.scores?.[todayStr] ?? null}))
+    .filter(m => m.minutes !== null)
+    .sort((a,b) => a.minutes - b.minutes);
+
+  const myRank = sorted.findIndex(m => m.uid===currentUser.uid)+1;
+  if (myRank > 0) document.getElementById("myRankDisplay").textContent = "Platz "+myRank+" / "+sorted.length;
+
+  const above = myRank > 1 ? sorted[myRank-2] : null;
+  if (above && myMinutes !== null) {
+    document.getElementById("nudgeBanner").style.display = "flex";
+    document.getElementById("nudgeText").innerHTML = "Nur <strong style='color:#fff'>"+((myMinutes||0)-above.minutes)+" Min</strong> hinter <strong style='color:#fff'>"+above.name+"</strong> — leg's weg!";
+  }
+
+  if (sorted.length === 0) {
+    document.getElementById("leaderboard").innerHTML = "<div style='text-align:center;padding:40px 0;color:#333;font-size:14px'>Noch hat niemand seine Minuten eingetragen.<br><span style='color:#555'>Sei der Erste! 👆</span></div>";
+    return;
+  }
+
+  document.getElementById("leaderboard").innerHTML = sorted.map((u,i) => {
+    const isMe = u.uid === currentUser.uid;
+    const t2   = tier(u.minutes);
+    const pct  = Math.min(100,(u.minutes/180)*100);
+    return `<div class="leaderboard-row ${isMe?'me':'other'}">
+      ${isMe ? '<div class="me-bar"></div>' : ""}
+      <div style="width:28px;text-align:center;flex-shrink:0;font-family:'Syne',sans-serif;font-size:${i<3?17:12}px;color:${i<3?t2.color:'#222'};font-weight:800">${rEmoji(i+1)}</div>
+      <div class="avatar ${isMe?'glow':'dark'}" style="width:36px;height:36px;font-size:14px;${isMe?'color:#fff;border:2px solid #ff3b5c':'color:#555;border:2px solid #1e1e35'}">${(u.name||"?")[0].toUpperCase()}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+          <span style="font-weight:700;font-size:14px;color:${isMe?'#fff':'#bbb'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u.name}</span>
+          ${isMe ? '<span class="me-tag">DU</span>' : ""}
+          ${(u.streak||0)>2 ? '<span style="font-size:11px">🔥</span>' : ""}
+        </div>
+        <div class="score-bar-wrap"><div class="score-bar-fill" style="width:${pct}%;background:${t2.color}"></div></div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:${t2.color}">${fmt(u.minutes)}</div>
+        <div style="font-size:10px;color:#222;margin-top:1px">${t2.score} Pkt</div>
+      </div>
+    </div>`;
+  }).join("") + (sorted.length>=3 ? `<div style="margin-top:12px;background:#100508;border:1px solid #ff3b5c11;border-radius:12px;padding:12px 16px;font-size:13px;color:#ff3b5c55;text-align:center">💀 <strong style="color:#ff3b5c">${sorted[sorted.length-1].name}</strong> hat heute sein Handy nicht weglegen können 🫠</div>` : "");
+}
+
+function renderStats() {
+  if (!userData) return;
+  const scores = userData?.scores || {};
+  const todayStr = today();
+  const last7 = Array.from({length:7},(_,i) => {
+    const d = new Date(Date.now()-i*86400000).toISOString().slice(0,10);
+    return {date:d, minutes:scores[d]??null};
+  }).reverse();
+  const days = ["Mo","Di","Mi","Do","Fr","Sa","So"];
+  const withData = last7.filter(d=>d.minutes!==null);
+  const avg  = withData.length ? Math.round(withData.reduce((a,b)=>a+b.minutes,0)/withData.length) : null;
+  const best = withData.length ? Math.min(...withData.map(d=>d.minutes)) : null;
+  const todayMin = scores[todayStr]??null;
+  const maxVal = Math.max(...last7.map(d=>d.minutes||0),1);
+
+  document.getElementById("chartBars").innerHTML = last7.map((d,i) => {
+    const t2  = d.minutes!==null ? tier(d.minutes) : null;
+    const h   = d.minutes!==null ? Math.max(6,(d.minutes/maxVal)*90) : 6;
+    const isT = d.date===todayStr;
+    const dayIdx = new Date(d.date+"T12:00:00").getDay();
+    const dayName = days[dayIdx===0?6:dayIdx-1];
+    return `<div class="chart-bar">
+      <div class="chart-fill" style="height:${h}px;background:${d.minutes!==null?(isT?t2.color:t2.color+'44'):'#111'};${isT&&t2?'box-shadow:0 0 8px '+t2.color+'66':''}"></div>
+      <span class="chart-label" style="color:${isT?'#fff':'#333'}">${dayName}</span>
+    </div>`;
+  }).join("");
+
+  document.getElementById("statCards").innerHTML = [
+    {label:"Heute",     value:todayMin!==null?fmt(todayMin):"–",   color:todayMin!==null?tier(todayMin).color:"#333"},
+    {label:"Ø Woche",   value:avg!==null?fmt(avg):"–",             color:"#4d9fff"},
+    {label:"Bester Tag",value:best!==null?fmt(best):"–",           color:"#00e5a0"},
+    {label:"Streak",    value:(userData?.streak||0)+" 🔥",         color:"#ffe14d"},
+  ].map(s => `<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-value" style="color:${s.color}">${s.value}</div></div>`).join("");
+
+  document.getElementById("proUpsell").style.display = isPremium ? "none" : "block";
+}
+
+function renderProfile() {
+  if (!userData) return;
+  document.getElementById("profileAvatar").textContent = (userData.name||"?")[0].toUpperCase();
+  document.getElementById("profileName").textContent   = userData.name||"–";
+  document.getElementById("profileUsername").textContent = "@"+(userData.username||"–");
+  if (groupData) {
+    document.getElementById("profileGroup").innerHTML = `<div style="font-size:11px;color:#333;margin-bottom:4px">GRUPPE</div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px">${groupData.name}</div><div style="font-size:12px;color:#555;margin-top:2px">Code: <span style="color:#fff;letter-spacing:1px">${groupData.inviteCode}</span></div>`;
+  }
+  document.getElementById("profileProBtn").style.display = isPremium ? "none" : "block";
+}
+
+// ── NAV ──────────────────────────────────────────────────────
+window.setNav = function(panel, btn) {
+  document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+  document.getElementById(panel+"Panel").classList.add("active");
+  btn.classList.add("active");
+  if (panel==="stats") renderStats();
+  if (panel==="profile") renderProfile();
+}
+
+window.setTab = function(tab, btn) {
+  document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+}
+
+// ── PREMIUM ──────────────────────────────────────────────────
+window.openPremium  = () => document.getElementById("premiumModal").classList.add("open");
+window.closePremium = () => document.getElementById("premiumModal").classList.remove("open");
+window.buyPremium   = () => { isPremium=true; closePremium(); document.getElementById("proBtn").style.display="none"; showToast("⭐ Pro aktiviert!"); renderStats(); }
+window.copyCode     = () => { navigator.clipboard?.writeText(groupData?.inviteCode||""); showToast("📋 Code kopiert!"); }
+
+// ── AUTH LISTENER ────────────────────────────────────────────
+onAuthStateChanged(auth, async user => {
+  currentUser = user;
+  if (!user) { userData=null; groupData=null; members=[]; showScreen("authScreen"); return; }
+
+  // Listen to user doc
+  onSnapshot(doc(db,"users",user.uid), async snap => {
+    if (!snap.exists()) return;
+    userData = {uid:user.uid, ...snap.data()};
+
+    if (!userData.groupId) { showScreen("groupScreen"); return; }
+
+    showScreen("appScreen");
+    document.getElementById("proBtn").style.display = isPremium?"none":"block";
+    document.getElementById("myName").textContent = userData.name||"–";
+    document.getElementById("myAvatar").textContent = (userData.name||"?")[0].toUpperCase();
+    document.getElementById("profileAvatar").textContent = (userData.name||"?")[0].toUpperCase();
+
+    // Group doc
+    onSnapshot(doc(db,"groups",userData.groupId), snap2 => {
+      if (snap2.exists()) { groupData = {id:snap2.id,...snap2.data()}; }
+    });
+
+    // Members
+    if (unsubMembers) unsubMembers();
+    unsubMembers = onSnapshot(
+      query(collection(db,"users"), where("groupId","==",userData.groupId)),
+      snap3 => {
+        members = snap3.docs.map(d=>({uid:d.id,...d.data()}));
+        renderHome();
+      }
+    );
+  });
+});
+</script>
+
+</body>
 </html>
