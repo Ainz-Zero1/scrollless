@@ -1,0 +1,872 @@
+// ============================================================
+// SCROLLLESS – Complete App with Firebase
+// ————————————————————
+// SETUP: Replace the firebaseConfig below with your own config
+// from Firebase Console → Project Settings → Your Apps
+// ============================================================
+
+import { useState, useEffect, useCallback } from “react”;
+import { initializeApp } from “https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js”;
+import {
+getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+onAuthStateChanged, signOut, updateProfile,
+} from “https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js”;
+import {
+getFirestore, doc, setDoc, getDoc, collection,
+query, where, onSnapshot, updateDoc, addDoc,
+serverTimestamp, getDocs,
+} from “https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js”;
+
+// ─── 🔥 DEINE FIREBASE CONFIG HIER EINFÜGEN ─────────────────
+const firebaseConfig = {
+apiKey:            “AIzaSyCb6xNqH1oSfmShLQMguOxo49nAzwwioWk”,
+authDomain:        “scrollless0.firebaseapp.com”,
+projectId:         “scrollless0”,
+storageBucket:     “scrollless0.firebasestorage.app”,
+messagingSenderId: “955126183227”,
+appId:             “1:955126183227:web:249e6d8257c34d7326b31e”,
+};
+// ─────────────────────────────────────────────────────────────
+
+const app    = initializeApp(firebaseConfig);
+const auth   = getAuth(app);
+const db     = getFirestore(app);
+
+// ─── GLOBAL STYLES ───────────────────────────────────────────
+const G = () => (
+
+  <style>{`
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    html,body{background:#050508;overflow-x:hidden;}
+    input,button,textarea{font-family:'Space Grotesk',sans-serif;}
+    input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+    ::-webkit-scrollbar{width:0;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+    @keyframes popIn{from{opacity:0;transform:scale(0.85)}to{opacity:1;transform:scale(1)}}
+    .fu{animation:fadeUp 0.45s ease both;}
+    .fu1{animation:fadeUp 0.45s 0.08s ease both;opacity:0}
+    .fu2{animation:fadeUp 0.45s 0.16s ease both;opacity:0}
+    .fu3{animation:fadeUp 0.45s 0.24s ease both;opacity:0}
+  `}</style>
+
+);
+
+// ─── HELPERS ─────────────────────────────────────────────────
+const TIERS = [
+{max:30,  score:100, label:“Fokus-Held 🧠”,  color:”#00e5a0”},
+{max:60,  score:70,  label:“Gut dabei ✌️”,    color:”#ffe14d”},
+{max:120, score:30,  label:“Aufs Limit ⚠️”,   color:”#ff8c42”},
+{max:1e9, score:0,   label:“Abgestürzt 💀”,   color:”#ff3b5c”},
+];
+const tier  = m => TIERS.find(t => m < t.max);
+const fmt   = m => m < 60 ? `${m}m` : `${Math.floor(m/60)}h${m%60?` ${m%60}m`:""}`;
+const rEmoji = r => r===1?“🥇”:r===2?“🥈”:r===3?“🥉”:`#${r}`;
+const today  = () => new Date().toISOString().slice(0,10);
+
+// ─── UI ATOMS ────────────────────────────────────────────────
+function Spinner() {
+return <div style={{width:28,height:28,borderRadius:“50%”,border:“2px solid #ff3b5c”,borderTopColor:“transparent”,animation:“spin 0.7s linear infinite”}}/>;
+}
+
+function Av({letter=”?”, size=40, glow=false}) {
+const c = glow ? “#ff3b5c” : “#1e1e35”;
+return (
+<div style={{
+width:size,height:size,borderRadius:“50%”,flexShrink:0,
+background: glow?“linear-gradient(135deg,#ff3b5c,#ff6b35)”:”#0d0d1a”,
+border:`2px solid ${c}`,
+display:“flex”,alignItems:“center”,justifyContent:“center”,
+fontSize:size*0.38,fontWeight:800,color:glow?”#fff”:”#555”,
+fontFamily:”‘Syne’,sans-serif”,
+boxShadow: glow?`0 0 14px #ff3b5c55`:“none”,
+}}>{letter.toUpperCase()}</div>
+);
+}
+
+function Btn({children, onClick, v=“primary”, full=false, disabled=false, style={}}) {
+const vs = {
+primary:{background:“linear-gradient(135deg,#ff3b5c,#ff6b35)”,color:”#fff”,padding:“14px 22px”,fontSize:15},
+ghost:  {background:”#0a0a18”,border:“1px solid #1e1e35”,color:”#888”,padding:“13px 20px”,fontSize:14},
+yellow: {background:“linear-gradient(135deg,#ffe14d,#ff8c42)”,color:”#000”,padding:“14px 22px”,fontSize:15},
+danger: {background:”#ff3b5c15”,border:“1px solid #ff3b5c33”,color:”#ff3b5c”,padding:“12px 18px”,fontSize:13},
+small:  {background:”#0a0a18”,border:“1px solid #1e1e35”,color:”#666”,padding:“8px 14px”,fontSize:12},
+};
+return (
+<button onClick={disabled?undefined:onClick} style={{
+border:“none”,borderRadius:14,fontFamily:”‘Space Grotesk’,sans-serif”,fontWeight:700,
+cursor:disabled?“not-allowed”:“pointer”,opacity:disabled?0.4:1,
+transition:“all 0.15s ease”,width:full?“100%”:“auto”,
+display:“flex”,alignItems:“center”,justifyContent:“center”,gap:8,
+…vs[v], …style,
+}}>{children}</button>
+);
+}
+
+function Inp({value, onChange, placeholder, type=“text”, style={}}) {
+return (
+<input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
+style={{
+width:“100%”,background:”#0a0a18”,border:“1px solid #1e1e35”,
+borderRadius:12,padding:“13px 16px”,color:”#fff”,fontSize:14,outline:“none”,
+transition:“border 0.2s”, …style,
+}}
+onFocus={e=>e.target.style.borderColor=”#ff3b5c66”}
+onBlur={e=>e.target.style.borderColor=”#1e1e35”}
+/>
+);
+}
+
+function Toast({msg}) {
+if (!msg) return null;
+return (
+<div style={{
+position:“fixed”,top:20,left:“50%”,transform:“translateX(-50%)”,
+background:”#111122”,border:“1px solid #1e1e35”,borderRadius:12,
+padding:“12px 20px”,fontFamily:”‘Space Grotesk’,sans-serif”,
+fontSize:13,color:”#fff”,zIndex:9999,whiteSpace:“nowrap”,
+animation:“popIn 0.25s ease”,
+}}>{msg}</div>
+);
+}
+
+// ─── SCREEN: AUTH ─────────────────────────────────────────────
+function AuthScreen({onAuth}) {
+const [mode, setMode]     = useState(“login”); // login | register
+const [name, setName]     = useState(””);
+const [email, setEmail]   = useState(””);
+const [pw, setPw]         = useState(””);
+const [err, setErr]       = useState(””);
+const [loading, setLoad]  = useState(false);
+
+async function handleSubmit() {
+setErr(””); setLoad(true);
+try {
+if (mode === “register”) {
+if (!name.trim()) { setErr(“Bitte Namen eingeben”); setLoad(false); return; }
+const cred = await createUserWithEmailAndPassword(auth, email, pw);
+await updateProfile(cred.user, {displayName: name.trim()});
+await setDoc(doc(db,“users”,cred.user.uid), {
+name: name.trim(),
+username: name.trim().toLowerCase().replace(/\s+/g,”_”),
+email, streak:0, badges:[],
+createdAt: serverTimestamp(),
+});
+onAuth(cred.user);
+} else {
+const cred = await signInWithEmailAndPassword(auth, email, pw);
+onAuth(cred.user);
+}
+} catch(e) {
+const msgs = {
+“auth/email-already-in-use”:“E-Mail bereits registriert”,
+“auth/invalid-email”:“Ungültige E-Mail”,
+“auth/weak-password”:“Passwort zu kurz (min. 6 Zeichen)”,
+“auth/user-not-found”:“Kein Account mit dieser E-Mail”,
+“auth/wrong-password”:“Falsches Passwort”,
+“auth/invalid-credential”:“E-Mail oder Passwort falsch”,
+};
+setErr(msgs[e.code] || e.message);
+}
+setLoad(false);
+}
+
+return (
+<div style={{minHeight:“100vh”,background:”#050508”,display:“flex”,flexDirection:“column”,padding:“60px 24px 40px”}}>
+<G/>
+<div className="fu" style={{marginBottom:40}}>
+<div style={{fontFamily:”‘Syne’,sans-serif”,fontWeight:800,fontSize:38,color:”#fff”,letterSpacing:”-1.5px”}}>
+scroll<span style={{background:“linear-gradient(135deg,#ff3b5c,#ff6b35)”,WebkitBackgroundClip:“text”,WebkitTextFillColor:“transparent”}}>less</span>
+</div>
+<p style={{fontFamily:”‘Space Grotesk’,sans-serif”,color:”#333”,fontSize:14,marginTop:6}}>
+Weniger scrollen. Besser ranken.
+</p>
+</div>
+
+```
+  <div className="fu1" style={{display:"flex",gap:4,background:"#080810",border:"1px solid #111",borderRadius:12,padding:4,marginBottom:24}}>
+    {["login","register"].map(m=>(
+      <button key={m} onClick={()=>setMode(m)} style={{
+        flex:1,padding:"9px 0",borderRadius:9,border:"none",
+        background:mode===m?"linear-gradient(135deg,#ff3b5c,#ff6b35)":"transparent",
+        color:mode===m?"#fff":"#333",
+        fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer",
+      }}>{m==="login"?"Einloggen":"Registrieren"}</button>
+    ))}
+  </div>
+
+  <div className="fu2" style={{display:"flex",flexDirection:"column",gap:12,marginBottom:20}}>
+    {mode==="register" && <Inp value={name} onChange={setName} placeholder="Dein Name (z.B. Leon)"/>}
+    <Inp value={email} onChange={setEmail} placeholder="E-Mail" type="email"/>
+    <Inp value={pw} onChange={setPw} placeholder="Passwort" type="password"/>
+    {err && <p style={{fontFamily:"'Space Grotesk',sans-serif",color:"#ff3b5c",fontSize:13}}>{err}</p>}
+  </div>
+
+  <div className="fu3">
+    <Btn v="primary" full onClick={handleSubmit} disabled={loading}>
+      {loading ? <Spinner/> : mode==="login" ? "Einloggen →" : "Account erstellen →"}
+    </Btn>
+  </div>
+</div>
+```
+
+);
+}
+
+// ─── SCREEN: GROUP SETUP ──────────────────────────────────────
+function GroupScreen({user, onDone}) {
+const [mode, setMode]     = useState(null); // “create” | “join”
+const [groupName, setGN]  = useState(””);
+const [code, setCode]     = useState(””);
+const [err, setErr]       = useState(””);
+const [loading, setLoad]  = useState(false);
+
+async function handleCreate() {
+if (!groupName.trim()) { setErr(“Gruppenname eingeben”); return; }
+setLoad(true); setErr(””);
+try {
+const inviteCode = Math.random().toString(36).slice(2,8).toUpperCase();
+const ref = await addDoc(collection(db,“groups”),{
+name: groupName.trim(),
+inviteCode,
+createdBy: user.uid,
+members: [user.uid],
+createdAt: serverTimestamp(),
+});
+await updateDoc(doc(db,“users”,user.uid),{groupId: ref.id});
+onDone();
+} catch(e){ setErr(e.message); }
+setLoad(false);
+}
+
+async function handleJoin() {
+if (!code.trim()) { setErr(“Code eingeben”); return; }
+setLoad(true); setErr(””);
+try {
+const q = query(collection(db,“groups”), where(“inviteCode”,”==”,code.trim().toUpperCase()));
+const snap = await getDocs(q);
+if (snap.empty) { setErr(“Kein Gruppe mit diesem Code gefunden”); setLoad(false); return; }
+const groupDoc = snap.docs[0];
+const members = groupDoc.data().members || [];
+if (!members.includes(user.uid)) {
+await updateDoc(doc(db,“groups”,groupDoc.id),{members:[…members, user.uid]});
+}
+await updateDoc(doc(db,“users”,user.uid),{groupId: groupDoc.id});
+onDone();
+} catch(e){ setErr(e.message); }
+setLoad(false);
+}
+
+return (
+<div style={{minHeight:“100vh”,background:”#050508”,padding:“60px 24px 40px”}}>
+<G/>
+<div className="fu" style={{marginBottom:32}}>
+<div style={{fontSize:40,marginBottom:12}}>👥</div>
+<h1 style={{fontFamily:”‘Syne’,sans-serif”,fontWeight:800,fontSize:26,color:”#fff”,marginBottom:6}}>
+Deine Gruppe
+</h1>
+<p style={{fontFamily:”‘Space Grotesk’,sans-serif”,color:”#444”,fontSize:14}}>
+Erstelle eine Gruppe oder tritt einer bei
+</p>
+</div>
+
+```
+  {!mode && (
+    <div className="fu1" style={{display:"flex",flexDirection:"column",gap:12}}>
+      <button onClick={()=>setMode("create")} style={{
+        background:"#0a0a18",border:"1px solid #1e1e35",borderRadius:16,
+        padding:20,textAlign:"left",cursor:"pointer",
+      }}>
+        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:"#fff",marginBottom:4}}>
+          ✨ Neue Gruppe erstellen
+        </div>
+        <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:"#444"}}>
+          Erstelle eine Gruppe und lade Freunde ein
+        </div>
+      </button>
+      <button onClick={()=>setMode("join")} style={{
+        background:"#0a0a18",border:"1px solid #1e1e35",borderRadius:16,
+        padding:20,textAlign:"left",cursor:"pointer",
+      }}>
+        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:"#fff",marginBottom:4}}>
+          🔗 Gruppe beitreten
+        </div>
+        <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:"#444"}}>
+          Gib den Einladungscode deiner Freunde ein
+        </div>
+      </button>
+    </div>
+  )}
+
+  {mode === "create" && (
+    <div className="fu" style={{display:"flex",flexDirection:"column",gap:12}}>
+      <Inp value={groupName} onChange={setGN} placeholder="Gruppenname (z.B. Berlin Crew)"/>
+      {err && <p style={{color:"#ff3b5c",fontSize:13,fontFamily:"'Space Grotesk',sans-serif"}}>{err}</p>}
+      <Btn v="primary" full onClick={handleCreate} disabled={loading}>
+        {loading?<Spinner/>:"Gruppe erstellen →"}
+      </Btn>
+      <Btn v="ghost" full onClick={()=>setMode(null)}>← Zurück</Btn>
+    </div>
+  )}
+
+  {mode === "join" && (
+    <div className="fu" style={{display:"flex",flexDirection:"column",gap:12}}>
+      <Inp value={code} onChange={setCode} placeholder="Einladungscode (z.B. AB12CD)"/>
+      {err && <p style={{color:"#ff3b5c",fontSize:13,fontFamily:"'Space Grotesk',sans-serif"}}>{err}</p>}
+      <Btn v="primary" full onClick={handleJoin} disabled={loading}>
+        {loading?<Spinner/>:"Beitreten →"}
+      </Btn>
+      <Btn v="ghost" full onClick={()=>setMode(null)}>← Zurück</Btn>
+    </div>
+  )}
+</div>
+```
+
+);
+}
+
+// ─── SCREEN: HOME ─────────────────────────────────────────────
+function HomeScreen({user, userData, groupData, members, isPremium, onUpgrade, onToast}) {
+const [showInput, setShowInput] = useState(false);
+const [inputVal, setInputVal]   = useState(””);
+const [saving, setSaving]       = useState(false);
+const [tab, setTab]             = useState(“day”);
+
+const todayStr = today();
+const myMinutes = userData?.scores?.[todayStr] ?? null;
+const myTier    = myMinutes !== null ? tier(myMinutes) : null;
+
+const sorted = […members]
+.map(m => ({…m, minutes: m.scores?.[todayStr] ?? null}))
+.filter(m => m.minutes !== null)
+.sort((a,b) => a.minutes - b.minutes);
+
+const myRank  = sorted.findIndex(m=>m.uid===user.uid) + 1;
+const above   = myRank > 1 ? sorted[myRank-2] : null;
+const last    = sorted[sorted.length-1];
+
+async function saveMinutes() {
+const m = parseInt(inputVal);
+if (isNaN(m) || m < 0 || m > 1440) { onToast(“⚠️ Ungültige Zahl”); return; }
+setSaving(true);
+try {
+const scores = {…(userData?.scores||{}), [todayStr]: m};
+// update streak
+const yesterday = new Date(Date.now()-86400000).toISOString().slice(0,10);
+const hadYesterday = userData?.scores?.[yesterday] !== undefined;
+const streak = hadYesterday ? (userData?.streak||0)+1 : 1;
+await updateDoc(doc(db,“users”,user.uid),{scores, streak});
+setShowInput(false);
+setInputVal(””);
+onToast(“✓ Gespeichert!”);
+} catch(e){ onToast(“Fehler: “+e.message); }
+setSaving(false);
+}
+
+return (
+<div style={{paddingBottom:90}}>
+{/* Header */}
+<div style={{padding:“52px 16px 16px”,background:“linear-gradient(180deg,#0a0a18,#050508)”}}>
+<div style={{display:“flex”,justifyContent:“space-between”,alignItems:“center”}}>
+<div>
+<div style={{fontFamily:”‘Syne’,sans-serif”,fontWeight:800,fontSize:24,color:”#fff”,letterSpacing:”-0.5px”}}>
+scroll<span style={{background:“linear-gradient(135deg,#ff3b5c,#ff6b35)”,WebkitBackgroundClip:“text”,WebkitTextFillColor:“transparent”}}>less</span>
+</div>
+<div style={{fontFamily:”‘Space Grotesk’,sans-serif”,color:”#333”,fontSize:12,marginTop:2}}>
+{groupData?.name || “Keine Gruppe”} · {members.length} Mitglieder
+</div>
+</div>
+{!isPremium && (
+<button onClick={onUpgrade} style={{
+background:”#ffe14d15”,border:“1px solid #ffe14d33”,borderRadius:10,
+padding:“7px 12px”,color:”#ffe14d”,
+fontFamily:”‘Space Grotesk’,sans-serif”,fontSize:11,fontWeight:700,cursor:“pointer”,
+}}>⭐ Pro</button>
+)}
+</div>
+</div>
+
+```
+  <div style={{padding:"0 16px"}}>
+    {/* My Card */}
+    <div className="fu" style={{
+      background:"linear-gradient(135deg,#0f0f1e,#1a0a0f)",
+      border:"1px solid #ff3b5c22",borderRadius:18,padding:18,marginBottom:12,
+      boxShadow:"0 4px 30px #ff3b5c10",
+    }}>
+      <div style={{display:"flex",alignItems:"center",gap:14}}>
+        <Av letter={userData?.name?.[0]||"?"} size={52} glow/>
+        <div style={{flex:1}}>
+          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:17,color:"#fff",marginBottom:3}}>
+            {userData?.name || user.displayName}
+          </div>
+          {myMinutes !== null ? (
+            <>
+              <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:myTier.color,marginBottom:5}}>
+                {myTier.label}
+              </div>
+              {(userData?.streak||0) > 0 && (
+                <span style={{background:"#1a1500",border:"1px solid #ffe14d33",borderRadius:6,padding:"3px 8px",fontSize:11,color:"#ffe14d",fontFamily:"'Space Grotesk',sans-serif"}}>
+                  🔥 {userData.streak} Tage Streak
+                </span>
+              )}
+            </>
+          ) : (
+            <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:"#444"}}>
+              Noch keine Eingabe heute
+            </div>
+          )}
+        </div>
+        <div style={{textAlign:"center"}}>
+          {myMinutes !== null ? (
+            <>
+              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:32,color:myTier.color,lineHeight:1}}>
+                {fmt(myMinutes)}
+              </div>
+              {myRank > 0 && (
+                <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:"#333",marginTop:4}}>
+                  Platz {myRank} / {sorted.length}
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,color:"#333"}}>–</div>
+          )}
+        </div>
+      </div>
+
+      {myMinutes !== null && (
+        <div style={{height:3,background:"#111",borderRadius:2,overflow:"hidden",marginTop:14}}>
+          <div style={{height:"100%",width:`${Math.min(100,(myMinutes/180)*100)}%`,background:myTier.color,borderRadius:2,transition:"width 1s ease"}}/>
+        </div>
+      )}
+
+      <button onClick={()=>setShowInput(s=>!s)} style={{
+        marginTop:14,width:"100%",padding:"10px",
+        background:"#ffffff08",border:"1px solid #ffffff08",
+        borderRadius:10,color:"#555",fontFamily:"'Space Grotesk',sans-serif",
+        fontSize:12,cursor:"pointer",
+      }}>
+        {showInput ? "↑ Schließen" : myMinutes!==null ? "✏️ Aktualisieren" : "✏️ Minuten eintragen"}
+      </button>
+
+      {showInput && (
+        <div style={{marginTop:10,display:"flex",gap:8}}>
+          <input
+            type="number" value={inputVal} onChange={e=>setInputVal(e.target.value)}
+            placeholder="z.B. 45"
+            style={{
+              flex:1,background:"#07070f",border:"1px solid #1e1e35",
+              borderRadius:10,padding:"11px 14px",color:"#fff",
+              fontFamily:"'Space Grotesk',sans-serif",fontSize:14,outline:"none",
+            }}
+          />
+          <Btn v="primary" onClick={saveMinutes} disabled={saving} style={{borderRadius:10,padding:"11px 18px",flexShrink:0}}>
+            {saving?<Spinner/>:"✓"}
+          </Btn>
+        </div>
+      )}
+    </div>
+
+    {/* Nudge */}
+    {above && myMinutes !== null && (
+      <div className="fu1" style={{
+        background:"#050f1a",border:"1px solid #4d9fff22",
+        borderRadius:12,padding:"12px 16px",marginBottom:12,
+        display:"flex",alignItems:"center",gap:10,
+      }}>
+        <span style={{fontSize:16}}>⚡</span>
+        <span style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:"#4d9fff"}}>
+          Nur <strong style={{color:"#fff"}}>{myMinutes - above.minutes} Min</strong> hinter <strong style={{color:"#fff"}}>{above.name}</strong> — leg's weg!
+        </span>
+      </div>
+    )}
+
+    {/* Invite code */}
+    {groupData?.inviteCode && (
+      <div className="fu2" style={{
+        background:"#080810",border:"1px solid #111122",
+        borderRadius:12,padding:"12px 16px",marginBottom:12,
+        display:"flex",alignItems:"center",justifyContent:"space-between",
+      }}>
+        <div>
+          <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:"#333",marginBottom:2}}>Einladungscode</div>
+          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:20,color:"#fff",letterSpacing:2}}>
+            {groupData.inviteCode}
+          </div>
+        </div>
+        <button onClick={()=>{navigator.clipboard?.writeText(groupData.inviteCode); onToast("📋 Code kopiert!");}} style={{
+          background:"#ff3b5c15",border:"1px solid #ff3b5c33",borderRadius:10,
+          padding:"8px 14px",color:"#ff3b5c",
+          fontFamily:"'Space Grotesk',sans-serif",fontSize:12,fontWeight:700,cursor:"pointer",
+        }}>Kopieren</button>
+      </div>
+    )}
+
+    {/* Tabs */}
+    <div style={{
+      display:"flex",gap:4,background:"#080810",border:"1px solid #111",
+      borderRadius:12,padding:4,marginBottom:14,
+    }}>
+      {["day","week"].map(t=>(
+        <button key={t} onClick={()=>setTab(t)} style={{
+          flex:1,padding:"9px 0",borderRadius:9,border:"none",
+          background:tab===t?"linear-gradient(135deg,#ff3b5c,#ff6b35)":"transparent",
+          color:tab===t?"#fff":"#333",
+          fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",
+        }}>
+          {t==="day"?"Heute":"Diese Woche"}
+        </button>
+      ))}
+    </div>
+
+    {/* Leaderboard */}
+    {sorted.length === 0 ? (
+      <div style={{textAlign:"center",padding:"40px 0",fontFamily:"'Space Grotesk',sans-serif",color:"#333",fontSize:14}}>
+        Noch hat niemand seine Minuten eingetragen.<br/>
+        <span style={{color:"#555"}}>Sei der Erste! 👆</span>
+      </div>
+    ) : (
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {sorted.map((m,i) => {
+          const isMe = m.uid === user.uid;
+          const t2 = tier(m.minutes);
+          return (
+            <div key={m.uid} style={{
+              display:"flex",alignItems:"center",gap:12,
+              padding:"13px 14px",
+              background:isMe?"#0f0f1e":"#080810",
+              border:`1px solid ${isMe?"#ff3b5c22":"#0d0d1a"}`,
+              borderRadius:14,position:"relative",overflow:"hidden",
+              animation:`fadeUp 0.4s ${i*60}ms ease both`,opacity:0,
+            }}>
+              {isMe && <div style={{position:"absolute",left:0,top:0,bottom:0,width:3,background:"linear-gradient(180deg,#ff3b5c,#ff6b35)"}}/>}
+              <div style={{width:28,textAlign:"center",flexShrink:0,fontFamily:"'Syne',sans-serif",fontSize:i<3?17:12,color:i<3?t2.color:"#222",fontWeight:800}}>
+                {rEmoji(i+1)}
+              </div>
+              <Av letter={m.name?.[0]||"?"} size={36} glow={isMe}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
+                  <span style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:14,color:isMe?"#fff":"#bbb",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                    {m.name}
+                  </span>
+                  {isMe && <span style={{fontSize:9,color:"#ff3b5c",background:"#ff3b5c22",padding:"2px 6px",borderRadius:4,fontFamily:"'Space Grotesk',sans-serif",fontWeight:700}}>DU</span>}
+                  {(m.streak||0)>2 && <span style={{fontSize:11}}>🔥</span>}
+                </div>
+                <div style={{height:3,background:"#111",borderRadius:2,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:`${Math.min(100,(m.minutes/180)*100)}%`,background:t2.color,borderRadius:2}}/>
+                </div>
+              </div>
+              <div style={{textAlign:"right",flexShrink:0}}>
+                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:15,color:t2.color}}>
+                  {fmt(m.minutes)}
+                </div>
+                <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:10,color:"#222",marginTop:1}}>
+                  {t2.score} Pkt
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    )}
+
+    {/* Letzter Message */}
+    {last && sorted.length >= 3 && (
+      <div style={{
+        marginTop:12,background:"#100508",border:"1px solid #ff3b5c11",
+        borderRadius:12,padding:"12px 16px",
+        fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:"#ff3b5c55",textAlign:"center",
+      }}>
+        💀 <strong style={{color:"#ff3b5c"}}>{last.name}</strong> hat heute sein Handy nicht weglegen können 🫠
+      </div>
+    )}
+  </div>
+</div>
+```
+
+);
+}
+
+// ─── SCREEN: STATS ────────────────────────────────────────────
+function StatsScreen({userData, isPremium, onUpgrade}) {
+const todayStr = today();
+const scores   = userData?.scores || {};
+const last7    = Array.from({length:7},(_,i)=>{
+const d = new Date(Date.now()-i*86400000).toISOString().slice(0,10);
+return {date:d, minutes: scores[d] ?? null};
+}).reverse();
+const days = [“Mo”,“Di”,“Mi”,“Do”,“Fr”,“Sa”,“So”];
+const withData = last7.filter(d=>d.minutes!==null);
+const avg  = withData.length ? Math.round(withData.reduce((a,b)=>a+b.minutes,0)/withData.length) : null;
+const best = withData.length ? Math.min(…withData.map(d=>d.minutes)) : null;
+const todayMin = scores[todayStr] ?? null;
+const maxVal = Math.max(…last7.map(d=>d.minutes||0), 1);
+
+return (
+<div style={{paddingBottom:90,padding:“52px 16px 90px”}}>
+<div className="fu" style={{marginBottom:24}}>
+<h1 style={{fontFamily:”‘Syne’,sans-serif”,fontWeight:800,fontSize:26,color:”#fff”,marginBottom:4}}>Stats</h1>
+<p style={{fontFamily:”‘Space Grotesk’,sans-serif”,color:”#333”,fontSize:13}}>Deine letzten 7 Tage</p>
+</div>
+
+```
+  {/* Chart */}
+  <div className="fu1" style={{background:"#080810",border:"1px solid #111",borderRadius:18,padding:20,marginBottom:14}}>
+    <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,color:"#fff",fontSize:14,marginBottom:16}}>
+      Verlauf
+    </div>
+    <div style={{display:"flex",alignItems:"flex-end",gap:6,height:90}}>
+      {last7.map((d,i)=>{
+        const t2 = d.minutes!==null ? tier(d.minutes) : null;
+        const h  = d.minutes!==null ? Math.max(6,(d.minutes/maxVal)*90) : 6;
+        const isT = d.date===todayStr;
+        return (
+          <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+            <div style={{
+              width:"100%",height:h,
+              background: d.minutes!==null ? (isT?t2.color:t2.color+"44") : "#111",
+              borderRadius:"4px 4px 0 0",
+              boxShadow: isT&&t2 ? `0 0 8px ${t2.color}66` : "none",
+              transition:"height 1s ease",
+            }}/>
+            <span style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:9,color:isT?"#fff":"#333"}}>
+              {days[new Date(d.date+"T12:00:00").getDay()==0?6:new Date(d.date+"T12:00:00").getDay()-1]}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+
+  {/* Stat cards */}
+  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+    {[
+      {label:"Heute",    value: todayMin!==null ? fmt(todayMin) : "–", color: todayMin!==null?tier(todayMin).color:"#333"},
+      {label:"Ø Woche",  value: avg!==null ? fmt(avg) : "–",           color:"#4d9fff"},
+      {label:"Bester Tag",value: best!==null ? fmt(best) : "–",        color:"#00e5a0"},
+      {label:"Streak",   value: `${userData?.streak||0} 🔥`,           color:"#ffe14d"},
+    ].map((s,i)=>(
+      <div key={i} style={{background:"#080810",border:"1px solid #111",borderRadius:14,padding:14,animation:`fadeUp 0.4s ${i*60+200}ms ease both`,opacity:0}}>
+        <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:"#333",marginBottom:6}}>{s.label}</div>
+        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,color:s.color}}>{s.value}</div>
+      </div>
+    ))}
+  </div>
+
+  {!isPremium && (
+    <div style={{background:"linear-gradient(135deg,#100f00,#0a0a00)",border:"1px solid #ffe14d22",borderRadius:18,padding:20}}>
+      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:"#ffe14d",marginBottom:6}}>
+        ⭐ Pro für 0,99€/Monat
+      </div>
+      <p style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:"#555",marginBottom:14}}>
+        Mehrere Gruppen · alle Challenges · detailliertere Stats
+      </p>
+      <Btn v="yellow" full onClick={onUpgrade}>Jetzt upgraden</Btn>
+    </div>
+  )}
+</div>
+```
+
+);
+}
+
+// ─── SCREEN: PROFILE ──────────────────────────────────────────
+function ProfileScreen({user, userData, groupData, onSignOut, isPremium, onUpgrade}) {
+return (
+<div style={{paddingBottom:90,padding:“52px 16px 90px”}}>
+<div className="fu" style={{marginBottom:28}}>
+<h1 style={{fontFamily:”‘Syne’,sans-serif”,fontWeight:800,fontSize:26,color:”#fff”,marginBottom:4}}>Profil</h1>
+</div>
+
+```
+  <div className="fu1" style={{background:"#080810",border:"1px solid #111",borderRadius:18,padding:20,marginBottom:14}}>
+    <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:16}}>
+      <Av letter={userData?.name?.[0]||"?"} size={56} glow/>
+      <div>
+        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:20,color:"#fff"}}>
+          {userData?.name || user.displayName}
+        </div>
+        <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:13,color:"#444"}}>
+          @{userData?.username || "–"}
+        </div>
+        {isPremium && <div style={{marginTop:6,fontSize:12,color:"#ffe14d",fontFamily:"'Space Grotesk',sans-serif"}}>⭐ Pro</div>}
+      </div>
+    </div>
+    {groupData && (
+      <div style={{background:"#050508",borderRadius:12,padding:"12px 14px"}}>
+        <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:"#333",marginBottom:4}}>GRUPPE</div>
+        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16,color:"#fff"}}>{groupData.name}</div>
+        <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,color:"#555",marginTop:2}}>
+          Code: <span style={{color:"#fff",letterSpacing:1}}>{groupData.inviteCode}</span>
+        </div>
+      </div>
+    )}
+  </div>
+
+  {!isPremium && (
+    <div className="fu2" style={{marginBottom:14}}>
+      <Btn v="yellow" full onClick={onUpgrade}>⭐ Auf Pro upgraden – 0,99€/Monat</Btn>
+    </div>
+  )}
+
+  <div className="fu3">
+    <Btn v="danger" full onClick={onSignOut}>Ausloggen</Btn>
+  </div>
+</div>
+```
+
+);
+}
+
+// ─── PREMIUM MODAL ────────────────────────────────────────────
+function PremiumModal({onClose, onBuy}) {
+return (
+<div style={{position:“fixed”,inset:0,background:”#000c”,zIndex:1000,display:“flex”,alignItems:“flex-end”,justifyContent:“center”,backdropFilter:“blur(4px)”}} onClick={onClose}>
+<div onClick={e=>e.stopPropagation()} style={{
+width:“100%”,maxWidth:480,background:”#0a0a18”,
+borderRadius:“24px 24px 0 0”,padding:“32px 24px 48px”,
+border:“1px solid #1e1e35”,animation:“slideUp 0.3s ease”,
+}}>
+<div style={{textAlign:“center”,marginBottom:24}}>
+<div style={{fontSize:44,marginBottom:8}}>⭐</div>
+<h2 style={{fontFamily:”‘Syne’,sans-serif”,fontWeight:800,fontSize:24,color:”#fff”,marginBottom:6}}>scrollless Pro</h2>
+<p style={{fontFamily:”‘Space Grotesk’,sans-serif”,color:”#444”,fontSize:13}}>Für echte Leaderboard-Krieger</p>
+</div>
+<div style={{display:“flex”,flexDirection:“column”,gap:10,marginBottom:24}}>
+{[“Mehrere Gruppen gleichzeitig”,“Alle Apps tracken”,“Alle Challenges”,“Detaillierte Wochenstats”,“Custom Badges & Profil”].map((f,i)=>(
+<div key={i} style={{display:“flex”,alignItems:“center”,gap:10}}>
+<span style={{color:”#00e5a0”,fontWeight:700}}>✓</span>
+<span style={{fontFamily:”‘Space Grotesk’,sans-serif”,fontSize:14,color:”#aaa”}}>{f}</span>
+</div>
+))}
+</div>
+<div style={{display:“flex”,gap:10}}>
+<Btn v="ghost" onClick={onClose} style={{flex:1}}>Abbrechen</Btn>
+<Btn v="yellow" onClick={onBuy} style={{flex:2}}>0,99€ / Monat</Btn>
+</div>
+<p style={{textAlign:“center”,fontFamily:”‘Space Grotesk’,sans-serif”,fontSize:10,color:”#222”,marginTop:12}}>
+Zahlung via Stripe · jederzeit kündbar
+</p>
+</div>
+</div>
+);
+}
+
+// ─── BOTTOM NAV ───────────────────────────────────────────────
+function Nav({active, onChange}) {
+return (
+<div style={{
+position:“fixed”,bottom:0,left:“50%”,transform:“translateX(-50%)”,
+width:“100%”,maxWidth:480,background:”#080810”,
+borderTop:“1px solid #111”,display:“flex”,padding:“10px 0 22px”,zIndex:100,
+}}>
+{[
+{id:“home”,   e:“🏆”, l:“Ranking”},
+{id:“stats”,  e:“📊”, l:“Stats”},
+{id:“profile”,e:“👤”, l:“Profil”},
+].map(t=>(
+<button key={t.id} onClick={()=>onChange(t.id)} style={{
+flex:1,display:“flex”,flexDirection:“column”,alignItems:“center”,gap:3,
+border:“none”,background:“transparent”,cursor:“pointer”,padding:“4px 0”,
+opacity:active===t.id?1:0.3,transition:“opacity 0.2s”,
+}}>
+<span style={{fontSize:20}}>{t.e}</span>
+<span style={{fontFamily:”‘Space Grotesk’,sans-serif”,fontWeight:700,fontSize:10,color:active===t.id?”#ff3b5c”:”#fff”}}>
+{t.l}
+</span>
+</button>
+))}
+</div>
+);
+}
+
+// ─── ROOT ─────────────────────────────────────────────────────
+export default function App() {
+const [authUser,   setAuthUser]   = useState(undefined); // undefined=loading
+const [userData,   setUserData]   = useState(null);
+const [groupData,  setGroupData]  = useState(null);
+const [members,    setMembers]    = useState([]);
+const [nav,        setNav]        = useState(“home”);
+const [isPremium,  setPremium]    = useState(false);
+const [showPremium,setShowP]      = useState(false);
+const [toast,      setToast]      = useState(””);
+
+function showToast(msg) { setToast(msg); setTimeout(()=>setToast(””),2500); }
+
+// Auth listener
+useEffect(()=>{
+const unsub = onAuthStateChanged(auth, u => setAuthUser(u||null));
+return unsub;
+},[]);
+
+// User data listener
+useEffect(()=>{
+if (!authUser) { setUserData(null); return; }
+const unsub = onSnapshot(doc(db,“users”,authUser.uid), snap => {
+if (snap.exists()) setUserData({uid:authUser.uid,…snap.data()});
+});
+return unsub;
+},[authUser]);
+
+// Group + members listener
+useEffect(()=>{
+if (!userData?.groupId) { setGroupData(null); setMembers([]); return; }
+const unsub1 = onSnapshot(doc(db,“groups”,userData.groupId), snap => {
+if (snap.exists()) setGroupData({id:snap.id,…snap.data()});
+});
+// members
+const unsub2 = onSnapshot(
+query(collection(db,“users”), where(“groupId”,”==”,userData.groupId)),
+snap => setMembers(snap.docs.map(d=>({uid:d.id,…d.data()})))
+);
+return ()=>{ unsub1(); unsub2(); };
+},[userData?.groupId]);
+
+// Loading
+if (authUser === undefined) return (
+<div style={{minHeight:“100vh”,background:”#050508”,display:“flex”,alignItems:“center”,justifyContent:“center”}}>
+<G/><Spinner/>
+</div>
+);
+
+// Not logged in
+if (!authUser) return <><G/><AuthScreen onAuth={u=>setAuthUser(u)}/></>;
+
+// Logged in but no group
+if (userData && !userData.groupId) return (
+<><G/><GroupScreen user={authUser} onDone={()=>{}}/></>
+);
+
+// Loading user data
+if (!userData) return (
+<div style={{minHeight:“100vh”,background:”#050508”,display:“flex”,alignItems:“center”,justifyContent:“center”}}>
+<G/><Spinner/>
+</div>
+);
+
+return (
+<div style={{maxWidth:480,margin:“0 auto”,minHeight:“100vh”,background:”#050508”}}>
+<G/>
+<Toast msg={toast}/>
+
+```
+  {nav==="home"    && <HomeScreen    user={authUser} userData={userData} groupData={groupData} members={members} isPremium={isPremium} onUpgrade={()=>setShowP(true)} onToast={showToast}/>}
+  {nav==="stats"   && <StatsScreen   userData={userData} isPremium={isPremium} onUpgrade={()=>setShowP(true)}/>}
+  {nav==="profile" && <ProfileScreen user={authUser} userData={userData} groupData={groupData} isPremium={isPremium} onUpgrade={()=>setShowP(true)} onSignOut={()=>signOut(auth)}/>}
+
+  <Nav active={nav} onChange={setNav}/>
+
+  {showPremium && (
+    <PremiumModal
+      onClose={()=>setShowP(false)}
+      onBuy={()=>{ setPremium(true); setShowP(false); showToast("⭐ Pro aktiviert!"); }}
+    />
+  )}
+</div>
+```
+
+);
+}
