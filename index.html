@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
   <style>
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-    body{background:#050508;color:#fff;font-family:'Space Grotesk',sans-serif;color:#fff;min-height:100vh}
+    body{background:#050508;font-family:'Space Grotesk',sans-serif;color:#fff;min-height:100vh}
     input,button{font-family:'Space Grotesk',sans-serif}
     ::-webkit-scrollbar{width:0}
     input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
@@ -19,12 +19,11 @@
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
 .fu{animation:fadeUp 0.4s ease both}
-.fu1{animation:fadeUp 0.4s 0.08s ease both;opacity:0}
-.fu2{animation:fadeUp 0.4s 0.16s ease both;opacity:0}
+.fu1{animation:fadeUp 0.4s 0.08s ease both}
+.fu2{animation:fadeUp 0.4s 0.16s ease both}
 
-.screen{display:none;min-height:100vh;max-width:480px;margin:0 auto;color:#fff}
-.screen.active{display:block!important;visibility:visible!important;opacity:1!important}
-
+.screen{display:none!important;min-height:100vh;max-width:480px;margin:0 auto}
+.screen.active{display:block!important}
 
 .spinner{width:28px;height:28px;border-radius:50%;border:2px solid #ff3b5c;border-top-color:transparent;animation:spin 0.7s linear infinite;margin:0 auto}
 
@@ -130,7 +129,7 @@
 
 <!-- AUTH SCREEN -->
 
-<div id="authScreen" class="screen active" style="display:block">
+<div id="authScreen" class="screen active">
   <div class="fu" style="margin-bottom:40px">
     <div class="logo-text logo" style="font-family:'Syne',sans-serif;font-size:38px;letter-spacing:-1.5px">scroll<span>less</span></div>
     <p style="color:#333;font-size:14px;margin-top:6px">Weniger scrollen. Besser ranken.</p>
