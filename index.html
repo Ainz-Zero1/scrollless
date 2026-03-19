@@ -554,12 +554,38 @@ window.saveMinutes = async function() {
   const m = parseInt(document.getElementById("minutesInp").value);
   if (isNaN(m)||m<0||m>1440) { showToast("⚠️ Ungültige Zahl"); return; }
   try {
-    const scores   = {...(userData?.scores||{}), [today()]:m};
+    const todayStr = today();
+    const scores = {...(userData?.scores||{}), [todayStr]:m};
     const yesterday = new Date(Date.now()-86400000).toISOString().slice(0,10);
-    const streak   = userData?.scores?.[yesterday]!==undefined ? (userData?.streak||0)+1 : 1;
-    await updateDoc(doc(db,"users",currentUser.uid), {scores, streak});
+    const streak = userData?.scores?.[yesterday]!==undefined ? (userData?.streak||0)+1 : 1;
+    
+    // Check if user is last in group today
+    const sorted = [...members]
+      .map(mb => ({...mb, minutes: mb.scores?.[todayStr] ?? null}))
+      .filter(mb => mb.minutes !== null)
+      .sort((a,b) => a.minutes - b.minutes);
+    
+    // Update timesLast if this user would be last
+    let timesLast = userData?.timesLast || 0;
+    if (sorted.length > 0) {
+      const wouldBeLast = sorted[sorted.length-1]?.uid === currentUser.uid || 
+        (m > Math.max(...sorted.map(mb=>mb.minutes)));
+      if (wouldBeLast && sorted.length >= 2) timesLast = timesLast + 1;
+    }
+    
+    // Update daysFirst if this user would be first
+    let daysFirst = userData?.daysFirst || 0;
+    if (sorted.length > 0) {
+      const wouldBeFirst = m < Math.min(...sorted.map(mb=>mb.minutes));
+      if (wouldBeFirst) daysFirst = daysFirst + 1;
+    }
+    
+    await updateDoc(doc(db,"users",currentUser.uid), {scores, streak, timesLast, daysFirst});
     document.getElementById("inputArea").style.display = "none";
     document.getElementById("inputToggle").textContent = "✏️ Aktualisieren";
+    
+    // Check for new achievements
+    setTimeout(() => checkNewAchievements(), 500);
     showToast("✓ Gespeichert!");
   } catch(e){ showToast("Fehler: "+e.message); }
 }
@@ -791,6 +817,7 @@ onAuthStateChanged(auth, async user => {
       snap3 => {
         members = snap3.docs.map(d=>({uid:d.id,...d.data()}));
         renderHome();
+      checkNewAchievements();
       }
     );
   });
@@ -1000,17 +1027,17 @@ function renderAchievements() {
 }
 
 // Show achievement notification when earned
+let previouslyEarned = new Set();
+
 function checkNewAchievements() {
   if (!userData) return;
   const earned = getEarnedAchievements(userData);
-  const stored = JSON.parse(localStorage.getItem('earnedAchievements') || '[]');
-  const newOnes = earned.filter(a => !stored.includes(a.id));
-  if (newOnes.length > 0) {
-    localStorage.setItem('earnedAchievements', JSON.stringify(earned.map(a=>a.id)));
-    newOnes.forEach(a => {
-      setTimeout(() => showToast(`🏅 Neuer Titel: ${a.emoji} ${a.title}!`), 500);
-    });
-  }
+  const newOnes = earned.filter(a => !previouslyEarned.has(a.id));
+  newOnes.forEach((a, i) => {
+    setTimeout(() => showToast("🏅 Neuer Titel: " + a.emoji + " " + a.title + "!"), i * 1500);
+    previouslyEarned.add(a.id);
+  });
+  earned.forEach(a => previouslyEarned.add(a.id));
 }
 
 </script>
