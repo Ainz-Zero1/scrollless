@@ -315,6 +315,18 @@
     <div style="margin-bottom:14px" id="profileProBtn">
       <button class="btn btn-yellow" onclick="openPremium()">⭐ Auf Pro upgraden – 0,99€/Monat</button>
     </div>
+    <div style="margin-bottom:14px">
+      <button class="btn btn-ghost" onclick="toggleGroupSwitch()" style="width:100%">🔄 Gruppe wechseln</button>
+    </div>
+    <div id="groupSwitchArea" style="display:none;margin-bottom:14px">
+      <div style="background:#0a0a18;border:1px solid #1e1e35;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:13px;color:#666">Neuer Einladungscode:</div>
+        <input id="switchCodeInp" class="inp" placeholder="Code eingeben (z.B. AB12CD)" style="padding:11px 14px"/>
+        <div id="switchErr" style="color:#ff3b5c;font-size:13px;display:none"></div>
+        <button class="btn btn-primary" onclick="switchGroup()" style="border-radius:10px">Beitreten →</button>
+        <button onclick="createNewGroup()" style="background:none;border:none;color:#555;font-size:13px;cursor:pointer;font-family:'Space Grotesk',sans-serif">+ Neue Gruppe erstellen</button>
+      </div>
+    </div>
     <button class="btn btn-ghost" onclick="handleSignOut()" style="border:1px solid #ff3b5c33;color:#ff3b5c;background:#ff3b5c15">Ausloggen</button>
   </div>
 
@@ -856,6 +868,50 @@ function showReactionPicker(targetUid, targetName) {
   
   document.body.appendChild(div);
   setTimeout(() => { if(document.getElementById("reactionPicker")) document.getElementById("reactionPicker").remove(); }, 4000);
+}
+
+
+// ── GRUPPE WECHSELN ───────────────────────────────────────────
+window.toggleGroupSwitch = function() {
+  const a = document.getElementById("groupSwitchArea");
+  a.style.display = a.style.display === "none" ? "block" : "none";
+}
+
+window.switchGroup = async function() {
+  const code = document.getElementById("switchCodeInp").value.trim().toUpperCase();
+  const err = document.getElementById("switchErr");
+  if (!code) { err.textContent="Code eingeben"; err.style.display="block"; return; }
+  err.style.display = "none";
+  try {
+    const q = query(collection(db,"groups"), where("inviteCode","==",code));
+    const snap = await getDocs(q);
+    if (snap.empty) { err.textContent="Keine Gruppe gefunden"; err.style.display="block"; return; }
+    const grp = snap.docs[0];
+    const mems = grp.data().members || [];
+    if (!mems.includes(currentUser.uid))
+      await updateDoc(doc(db,"groups",grp.id), {members:[...mems, currentUser.uid]});
+    await updateDoc(doc(db,"users",currentUser.uid), {groupId: grp.id});
+    document.getElementById("groupSwitchArea").style.display = "none";
+    document.getElementById("switchCodeInp").value = "";
+    showToast("✓ Gruppe gewechselt!");
+  } catch(e) { err.textContent=e.message; err.style.display="block"; }
+}
+
+window.createNewGroup = async function() {
+  const name = prompt("Gruppenname:");
+  if (!name || !name.trim()) return;
+  try {
+    const code = Math.random().toString(36).slice(2,8).toUpperCase();
+    const ref = await addDoc(collection(db,"groups"), {
+      name: name.trim(), inviteCode:code,
+      createdBy: currentUser.uid,
+      members:[currentUser.uid],
+      createdAt: serverTimestamp()
+    });
+    await updateDoc(doc(db,"users",currentUser.uid), {groupId: ref.id});
+    document.getElementById("groupSwitchArea").style.display = "none";
+    showToast("✓ Neue Gruppe erstellt! Code: " + code);
+  } catch(e) { showToast("Fehler: " + e.message); }
 }
 
 </script>
