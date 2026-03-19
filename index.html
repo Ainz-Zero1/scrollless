@@ -353,7 +353,8 @@
       <div class="section-title">🏅 Titel</div>
       <div class="section-sub">Verdiene Titel durch deine Leistungen</div>
     </div>
-    <div id="myTitleDisplay" style="margin-bottom:20px"></div>
+    <div id="myTitleDisplay" style="margin-bottom:12px"></div>
+    <div id="titleSelectArea" style="display:none;margin-bottom:16px"></div>
     <div id="achievementsList"></div>
   </div>
 
@@ -732,7 +733,13 @@ function renderHome() {
           ${isMe ? '<span class="me-tag">DU</span>' : ""}
           ${(u.streak||0)>2 ? '<span style="font-size:11px">🔥</span>' : ""}
         </div>
-        ${(()=>{ const earned=getEarnedAchievements(u); const top=earned[earned.length-1]; return top ? `<div style="font-size:10px;color:#555;margin-bottom:4px">${top.emoji} ${top.title}</div>` : ""; })()}
+        ${(()=>{ 
+          const earned=getEarnedAchievements(u); 
+          if (!earned.length) return "";
+          const saved = u.activeTitle ? earned.find(a=>a.id===u.activeTitle) : null;
+          const top = saved || earned[earned.length-1]; 
+          return top ? `<div style="font-size:10px;color:#555;margin-bottom:4px">${top.emoji} ${top.title}</div>` : ""; 
+        })()}
         <div class="score-bar-wrap"><div class="score-bar-fill" style="width:${pct}%;background:${t2.color}"></div></div>
       </div>
       <div style="text-align:right;flex-shrink:0">
@@ -1076,20 +1083,44 @@ function renderAchievements() {
   const earned = getEarnedAchievements(userData);
   const earnedIds = earned.map(a => a.id);
   
-  // Show active title
-  const activeTitle = earned[earned.length-1];
+  // Get active title from userData or use last earned
+  const savedTitleId = userData?.activeTitle;
+  const savedTitle = earned.find(a => a.id === savedTitleId);
+  const activeTitle = savedTitle || earned[earned.length-1];
+  
   document.getElementById("myTitleDisplay").innerHTML = activeTitle 
-    ? `<div style="background:linear-gradient(135deg,#0f0f1e,#1a0a0f);border:1px solid #ff3b5c33;border-radius:14px;padding:16px;display:flex;align-items:center;gap:12px">
+    ? `<div style="background:linear-gradient(135deg,#0f0f1e,#1a0a0f);border:1px solid #ff3b5c33;border-radius:14px;padding:16px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="toggleTitleSelect()">
         <span style="font-size:32px">${activeTitle.emoji}</span>
-        <div>
+        <div style="flex:1">
           <div style="font-size:11px;color:#555;margin-bottom:2px">DEIN AKTIVER TITEL</div>
           <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff">${activeTitle.title}</div>
           <div style="font-size:12px;color:#444">${earned.length} von ${ACHIEVEMENTS.length} Titeln verdient</div>
         </div>
+        <div style="font-size:12px;color:#333">Ändern ✎</div>
       </div>`
     : `<div style="background:#080810;border:1px solid #111;border-radius:14px;padding:16px;text-align:center;color:#444;font-size:13px">
         Noch kein Titel verdient – fang an zu tracken! 💪
       </div>`;
+
+  // Title selector
+  if (earned.length > 1) {
+    document.getElementById("titleSelectArea").innerHTML = `
+      <div style="background:#080810;border:1px solid #1e1e35;border-radius:14px;padding:14px">
+        <div style="font-size:11px;color:#444;margin-bottom:10px">TITEL AUSWÄHLEN:</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${earned.map(a => `
+            <button onclick="setActiveTitle('${a.id}')" style="display:flex;align-items:center;gap:10px;background:${(activeTitle?.id===a.id)?'linear-gradient(135deg,#ff3b5c22,#ff6b3511)':'#0a0a18'};border:1px solid ${(activeTitle?.id===a.id)?'#ff3b5c44':'#1e1e35'};border-radius:10px;padding:10px 14px;cursor:pointer;text-align:left">
+              <span style="font-size:20px">${a.emoji}</span>
+              <div style="flex:1">
+                <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;color:${(activeTitle?.id===a.id)?'#fff':'#888'}">${a.title}</div>
+                <div style="font-size:11px;color:#444">${a.desc}</div>
+              </div>
+              ${(activeTitle?.id===a.id)?'<span style="color:#ff3b5c;font-size:12px">✓ Aktiv</span>':""}
+            </button>
+          `).join('')}
+        </div>
+      </div>`;
+  }
 
   // Show all achievements
   document.getElementById("achievementsList").innerHTML = ACHIEVEMENTS.map(a => {
@@ -1278,6 +1309,20 @@ ACHIEVEMENTS.unshift({
   check: (u) => { try { return isCreator(); } catch(e) { return false; } }
 });
 
+ACHIEVEMENTS.unshift({
+  id:"overlord", emoji:"⚔️", title:"Overlord",
+  desc:"Der absolute Herrscher von scrollless",
+  premium:false,
+  check: (u) => { try { return isCreator(); } catch(e) { return false; } }
+});
+
+ACHIEVEMENTS.unshift({
+  id:"masterzero", emoji:"🖤", title:"MasterZero",
+  desc:"Kein Limit. Kein Gegner.",
+  premium:false,
+  check: (u) => { try { return isCreator(); } catch(e) { return false; } }
+});
+
 
 // ── CREATOR / APP ADMIN SYSTEM ─────────────────────────────
 const CREATOR_UIDS = [
@@ -1326,6 +1371,22 @@ window.sendGlobalAnnouncement = async function() {
     await setDoc(doc(db,"app","announcement"), {text, createdAt:serverTimestamp(), from:userData?.name});
     document.getElementById("globalAnnouncementInp").value = "";
     showToast("📢 Ankündigung gesendet!");
+  } catch(e) { showToast("Fehler: "+e.message); }
+}
+
+
+window.toggleTitleSelect = function() {
+  const area = document.getElementById("titleSelectArea");
+  if (!area) return;
+  area.style.display = area.style.display === "none" ? "block" : "none";
+}
+
+window.setActiveTitle = async function(titleId) {
+  try {
+    await updateDoc(doc(db,"users",currentUser.uid), {activeTitle: titleId});
+    showToast("✓ Titel geändert!");
+    document.getElementById("titleSelectArea").style.display = "none";
+    renderAchievements();
   } catch(e) { showToast("Fehler: "+e.message); }
 }
 
