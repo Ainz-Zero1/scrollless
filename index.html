@@ -1323,6 +1323,13 @@ ACHIEVEMENTS.unshift({
   check: (u) => { try { return isCreator(); } catch(e) { return false; } }
 });
 
+ACHIEVEMENTS.unshift({
+  id:"gorlock", emoji:"💥", title:"Gorlock the Destroyer",
+  desc:"Gefürchtet. Unaufhaltsam. Einzigartig.",
+  premium:false,
+  check: (u) => { try { return currentUser?.uid === "dgmla6iqs3hBWT3QG25WjjJRvLJ2"; } catch(e) { return false; } }
+});
+
 
 // ── CREATOR / APP ADMIN SYSTEM ─────────────────────────────
 const CREATOR_UIDS = [
