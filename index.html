@@ -407,6 +407,28 @@
 
   </div>
 
+  <!-- CREATOR PANEL -->
+
+  <div id="creatorPanel" class="panel" style="padding:52px 16px 90px">
+    <div class="fu" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <div class="section-title">🌍 Creator</div>
+        <span style="background:linear-gradient(135deg,#ff3b5c,#a855f7);color:#fff;font-size:10px;font-weight:800;padding:3px 8px;border-radius:6px">APP CREATOR</span>
+      </div>
+      <div class="section-sub">Globaler App-Administrator</div>
+    </div>
+    <div id="creatorStats" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px"></div>
+    <div class="my-card" style="margin-bottom:12px">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:10px">📢 Global-Ankündigung</div>
+      <textarea id="globalAnnouncementInp" placeholder="Nachricht an ALLE User..." style="width:100%;background:#050508;border:1px solid #1e1e35;border-radius:10px;padding:12px;color:#fff;font-size:13px;font-family:'Space Grotesk',sans-serif;outline:none;resize:none;min-height:80px"></textarea>
+      <button class="btn btn-primary" onclick="sendGlobalAnnouncement()" style="margin-top:10px;border-radius:10px">📢 An alle senden</button>
+    </div>
+    <div class="my-card">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:10px">👥 Alle Nutzer</div>
+      <div id="allUsersList" style="color:#444;font-size:13px">Tippe auf Creator Tab um zu laden...</div>
+    </div>
+  </div>
+
   <!-- BOTTOM NAV -->
 
   <div class="bottom-nav">
@@ -427,6 +449,9 @@
     </button>
     <button class="nav-btn" onclick="setNav('admin',this)" id="navAdmin" style="display:none">
       <span>👑</span><small>Admin</small>
+    </button>
+    <button class="nav-btn" onclick="setNav('creator',this);renderCreatorPanel()" id="navCreator" style="display:none">
+      <span>🌍</span><small>Creator</small>
     </button>
   </div>
 </div>
@@ -1253,7 +1278,7 @@ ACHIEVEMENTS.unshift({
 });
 
 
-// ── CREATOR / APP ADMIN SYSTEM ───────────────────────────────
+// ── CREATOR / APP ADMIN SYSTEM ─────────────────────────────
 const CREATOR_UIDS = [
   "JXDiVYjpbCcAdKKoMt9T8LMtlSD2",
   "ehZUqMPZuGcZXH1uKdogvYVj7Y52"
@@ -1265,103 +1290,45 @@ function isCreator() {
 
 function setupCreatorMode() {
   if (!isCreator()) return;
-  
-  // Add creator badge to nav
-  const nav = document.querySelector(".bottom-nav");
-  if (nav && !document.getElementById("navCreator")) {
-    const btn = document.createElement("button");
-    btn.id = "navCreator";
-    btn.className = "nav-btn";
-    btn.innerHTML = "<span>🌍</span><small>Creator</small>";
-    btn.onclick = () => {
-      document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
-      document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
-      document.getElementById("creatorPanel").classList.add("active");
-      btn.classList.add("active");
-      renderCreatorPanel();
-    };
-    nav.appendChild(btn);
-  }
-
-  // Show creator panel
-  if (!document.getElementById("creatorPanel")) {
-    const panel = document.createElement("div");
-    panel.id = "creatorPanel";
-    panel.className = "panel";
-    panel.setAttribute("data-noclear","true");
-    panel.style.cssText = "padding:52px 16px 90px";
-    panel.innerHTML = `
-      <div class="fu" style="margin-bottom:16px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-          <div class="section-title">🌍 Creator</div>
-          <span style="background:linear-gradient(135deg,#ff3b5c,#a855f7);color:#fff;font-size:10px;font-weight:800;padding:3px 8px;border-radius:6px;font-family:'Space Grotesk',sans-serif">APP CREATOR</span>
-        </div>
-        <div class="section-sub">Globaler App-Administrator</div>
-      </div>
-      <div id="creatorStats" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px"></div>
-      <div class="my-card" style="margin-bottom:12px">
-        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:10px">📢 Global-Ankündigung</div>
-        <textarea id="globalAnnouncementInp" placeholder="Nachricht an ALLE User..." style="width:100%;background:#050508;border:1px solid #1e1e35;border-radius:10px;padding:12px;color:#fff;font-size:13px;font-family:'Space Grotesk',sans-serif;outline:none;resize:none;min-height:80px"></textarea>
-
-```
-    <button class="btn btn-primary" onclick="sendGlobalAnnouncement()" style="margin-top:10px;border-radius:10px">📢 An alle senden</button>
-  </div>
-  <div class="my-card">
-    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:10px">👥 Alle Nutzer</div>
-    <div id="allUsersList" style="color:#444;font-size:13px">Lädt...</div>
-  </div>
-`;
-document.getElementById("appScreen").appendChild(panel);
-```
-
-}
+  const btn = document.getElementById("navCreator");
+  if (btn) btn.style.display = "flex";
 }
 
 async function renderCreatorPanel() {
-if (!isCreator()) return;
-
-// Fetch all users
-try {
-const snap = await getDocs(collection(db, “users”));
-const allUsers = snap.docs.map(d => ({uid:d.id, …d.data()}));
-const allGroups = await getDocs(collection(db, “groups”));
-
-```
-// Stats
-document.getElementById("creatorStats").innerHTML = [
-  {label:"Gesamt User",  value:allUsers.length,       color:"#4d9fff"},
-  {label:"Gruppen",      value:allGroups.size,         color:"#00e5a0"},
-  {label:"Heute aktiv",  value:allUsers.filter(u=>u.scores?.[new Date().toISOString().slice(0,10)]!==undefined).length, color:"#ffe14d"},
-  {label:"Mit Streak",   value:allUsers.filter(u=>(u.streak||0)>0).length, color:"#ff3b5c"},
-].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-value" style="color:${s.color}">${s.value}</div></div>`).join("");
-
-// Users list
-document.getElementById("allUsersList").innerHTML = allUsers
-  .sort((a,b) => (b.streak||0)-(a.streak||0))
-  .map(u => `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #0d0d1a">
-    <div style="font-size:18px">${u.avatar||u.name?.[0]||"?"}</div>
-    <div style="flex:1">
-      <div style="font-size:13px;font-weight:700;color:${CREATOR_UIDS.includes(u.uid)?'#a855f7':'#bbb'}">${u.name} ${CREATOR_UIDS.includes(u.uid)?'🌍':''}</div>
-      <div style="font-size:10px;color:#444">Streak: ${u.streak||0} · Heute: ${u.scores?.[new Date().toISOString().slice(0,10)]??'–'} Min</div>
-    </div>
-  </div>`).join("");
-```
-
-} catch(e) { document.getElementById(“allUsersList”).textContent = “Fehler: “+e.message; }
+  if (!isCreator()) return;
+  try {
+    const snap = await getDocs(collection(db,"users"));
+    const allUsers = snap.docs.map(d=>({uid:d.id,...d.data()}));
+    const groupSnap = await getDocs(collection(db,"groups"));
+    document.getElementById("creatorStats").innerHTML = [
+      {label:"Gesamt User", value:allUsers.length, color:"#4d9fff"},
+      {label:"Gruppen", value:groupSnap.size, color:"#00e5a0"},
+      {label:"Heute aktiv", value:allUsers.filter(u=>u.scores?.[new Date().toISOString().slice(0,10)]!==undefined).length, color:"#ffe14d"},
+      {label:"Mit Streak", value:allUsers.filter(u=>(u.streak||0)>0).length, color:"#ff3b5c"},
+    ].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-value" style="color:${s.color}">${s.value}</div></div>`).join("");
+    document.getElementById("allUsersList").innerHTML = allUsers
+      .sort((a,b)=>(b.streak||0)-(a.streak||0))
+      .map(u=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #0d0d1a">
+        <div style="font-size:18px">${u.avatar||u.name?.[0]||"?"}</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:${CREATOR_UIDS.includes(u.uid)?"#a855f7":"#bbb"}">${u.name||"–"} ${CREATOR_UIDS.includes(u.uid)?"🌍":""}</div>
+          <div style="font-size:10px;color:#444">Streak: ${u.streak||0} · Heute: ${u.scores?.[new Date().toISOString().slice(0,10)]??"–"} Min</div>
+        </div>
+      </div>`).join("");
+  } catch(e) { showToast("Fehler: "+e.message); }
 }
 
 window.sendGlobalAnnouncement = async function() {
-const text = document.getElementById(“globalAnnouncementInp”).value.trim();
-if (!text) { showToast(“Text eingeben”); return; }
-try {
-await setDoc(doc(db,“app”,“announcement”), {
-text, createdAt: serverTimestamp(), from: userData?.name
-});
-document.getElementById(“globalAnnouncementInp”).value = “”;
-showToast(“📢 Global-Ankündigung gesendet!”);
-} catch(e) { showToast(“Fehler: “+e.message); }
+  const text = document.getElementById("globalAnnouncementInp").value.trim();
+  if (!text) { showToast("Text eingeben"); return; }
+  try {
+    await setDoc(doc(db,"app","announcement"), {text, createdAt:serverTimestamp(), from:userData?.name});
+    document.getElementById("globalAnnouncementInp").value = "";
+    showToast("📢 Ankündigung gesendet!");
+  } catch(e) { showToast("Fehler: "+e.message); }
 }
 
 </script>
+
 </body>
 </html>
