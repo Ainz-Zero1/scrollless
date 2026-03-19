@@ -22,7 +22,7 @@
 .fu1{animation:fadeUp 0.4s 0.08s ease both}
 .fu2{animation:fadeUp 0.4s 0.16s ease both}
 
-.screen{display:none!important;min-height:100vh;max-width:480px;margin:0 auto}
+.screen{display:none;min-height:100vh;max-width:480px;margin:0 auto}
 .screen.active{display:block!important}
 
 .spinner{width:28px;height:28px;border-radius:50%;border:2px solid #ff3b5c;border-top-color:transparent;animation:spin 0.7s linear infinite;margin:0 auto}
@@ -129,7 +129,7 @@
 
 <!-- AUTH SCREEN -->
 
-<div id="authScreen" class="screen active">
+<div id="authScreen" class="screen" style="display:block;min-height:100vh;max-width:480px;margin:0 auto;padding:60px 24px 40px">
   <div class="fu" style="margin-bottom:40px">
     <div class="logo-text logo" style="font-family:'Syne',sans-serif;font-size:38px;letter-spacing:-1.5px">scroll<span>less</span></div>
     <p style="color:#333;font-size:14px;margin-top:6px">Weniger scrollen. Besser ranken.</p>
