@@ -346,6 +346,17 @@
     </div>
   </div>
 
+  <!-- ACHIEVEMENTS PANEL -->
+
+  <div id="achievementsPanel" class="panel" style="padding:52px 16px 90px">
+    <div class="fu" style="margin-bottom:8px">
+      <div class="section-title">🏅 Titel</div>
+      <div class="section-sub">Verdiene Titel durch deine Leistungen</div>
+    </div>
+    <div id="myTitleDisplay" style="margin-bottom:20px"></div>
+    <div id="achievementsList"></div>
+  </div>
+
   <!-- BOTTOM NAV -->
 
   <div class="bottom-nav">
@@ -357,6 +368,9 @@
     </button>
     <button class="nav-btn" onclick="setNav('chat',this)" id="navChat">
       <span>💬</span><small>Chat</small>
+    </button>
+    <button class="nav-btn" onclick="setNav('achievements',this)" id="navAchievements">
+      <span>🏅</span><small>Titel</small>
     </button>
     <button class="nav-btn" onclick="setNav('profile',this)" id="navProfile">
       <span>👤</span><small>Profil</small>
@@ -683,6 +697,7 @@ window.setNav = function(panel, btn) {
   if (panel==="profile") renderProfile();
   if (panel==="challenges") renderChallenges();
   if (panel==="chat") renderChat();
+  if (panel==="achievements") renderAchievements();
 }
 
 let currentAvatar = "😎";
@@ -912,6 +927,90 @@ window.createNewGroup = async function() {
     document.getElementById("groupSwitchArea").style.display = "none";
     showToast("✓ Neue Gruppe erstellt! Code: " + code);
   } catch(e) { showToast("Fehler: " + e.message); }
+}
+
+
+// ── ACHIEVEMENTS / TITEL ──────────────────────────────────────
+const ACHIEVEMENTS = [
+  // Kostenlos
+  { id:"rookie",    emoji:"🚀", title:"Frischling",       desc:"Erste Woche dabei",                    premium:false, check: (u) => true },
+  { id:"focused",   emoji:"🧘", title:"Zen-Meister",      desc:"7 Tage hintereinander unter 30 Min",   premium:false, check: (u) => (u.streak||0) >= 7 && Object.values(u.scores||{}).slice(-7).every(m=>m<30) },
+  { id:"streak14",  emoji:"🔥", title:"Streak-König",     desc:"14 Tage Streak",                       premium:false, check: (u) => (u.streak||0) >= 14 },
+  { id:"streak30",  emoji:"💎", title:"Unaufhaltbar",     desc:"30 Tage Streak",                       premium:false, check: (u) => (u.streak||0) >= 30 },
+  { id:"loser",     emoji:"💀", title:"Handysüchtig",     desc:"5x Letzter in der Gruppe gewesen",     premium:false, check: (u) => (u.timesLast||0) >= 5 },
+  { id:"comeback",  emoji:"😤", title:"Der Aufsteiger",   desc:"Minuten um 50% reduziert",             premium:false, check: (u) => {
+    const scores = Object.values(u.scores||{});
+    if (scores.length < 2) return false;
+    const first = scores[0], last = scores[scores.length-1];
+    return last < first * 0.5;
+  }},
+  // Pro
+  { id:"legend",    emoji:"👑", title:"Legende",          desc:"30 Tage auf Platz 1 (Pro)",            premium:true,  check: (u) => (u.daysFirst||0) >= 30 },
+  { id:"monk",      emoji:"🎯", title:"Fokus-Maschine",   desc:"30 Tage unter 60 Min täglich (Pro)",   premium:true,  check: (u) => Object.values(u.scores||{}).filter(m=>m<60).length >= 30 },
+  { id:"ghost",     emoji:"👻", title:"Ghost-Mode",       desc:"7 Tage unter 15 Min täglich (Pro)",    premium:true,  check: (u) => {
+    const scores = Object.values(u.scores||{});
+    return scores.length >= 7 && scores.slice(-7).every(m=>m<15);
+  }},
+  { id:"king",      emoji:"🏆", title:"Unantastbar",      desc:"5x hintereinander Platz 1 (Pro)",      premium:true,  check: (u) => (u.daysFirst||0) >= 5 },
+];
+
+function getEarnedAchievements(u) {
+  return ACHIEVEMENTS.filter(a => {
+    if (a.premium && !isPremium) return false;
+    try { return a.check(u); } catch(e) { return false; }
+  });
+}
+
+function renderAchievements() {
+  if (!userData) return;
+  const earned = getEarnedAchievements(userData);
+  const earnedIds = earned.map(a => a.id);
+  
+  // Show active title
+  const activeTitle = earned[earned.length-1];
+  document.getElementById("myTitleDisplay").innerHTML = activeTitle 
+    ? `<div style="background:linear-gradient(135deg,#0f0f1e,#1a0a0f);border:1px solid #ff3b5c33;border-radius:14px;padding:16px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:32px">${activeTitle.emoji}</span>
+        <div>
+          <div style="font-size:11px;color:#555;margin-bottom:2px">DEIN AKTIVER TITEL</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff">${activeTitle.title}</div>
+          <div style="font-size:12px;color:#444">${earned.length} von ${ACHIEVEMENTS.length} Titeln verdient</div>
+        </div>
+      </div>`
+    : `<div style="background:#080810;border:1px solid #111;border-radius:14px;padding:16px;text-align:center;color:#444;font-size:13px">
+        Noch kein Titel verdient – fang an zu tracken! 💪
+      </div>`;
+
+  // Show all achievements
+  document.getElementById("achievementsList").innerHTML = ACHIEVEMENTS.map(a => {
+    const isEarned = earnedIds.includes(a.id);
+    const isLocked = a.premium && !isPremium;
+    return `<div style="background:${isEarned?'linear-gradient(135deg,#0f0f1e,#1a0a0f)':'#080810'};border:1px solid ${isEarned?'#ff3b5c33':'#111'};border-radius:14px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;opacity:${isLocked?0.5:1}">
+      <div style="font-size:${isEarned?'32':'28'}px;filter:${isEarned?'none':'grayscale(1)'}">${isLocked?'🔒':a.emoji}</div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+          <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:${isEarned?'#fff':'#555'}">${a.title}</span>
+          ${a.premium?'<span style="font-size:9px;color:#ffe14d;background:#ffe14d22;padding:2px 5px;border-radius:4px;font-weight:700">PRO</span>':""}
+          ${isEarned?'<span style="font-size:9px;color:#00e5a0;background:#00e5a022;padding:2px 5px;border-radius:4px;font-weight:700">✓ VERDIENT</span>':""}
+        </div>
+        <div style="font-size:12px;color:#444">${a.desc}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Show achievement notification when earned
+function checkNewAchievements() {
+  if (!userData) return;
+  const earned = getEarnedAchievements(userData);
+  const stored = JSON.parse(localStorage.getItem('earnedAchievements') || '[]');
+  const newOnes = earned.filter(a => !stored.includes(a.id));
+  if (newOnes.length > 0) {
+    localStorage.setItem('earnedAchievements', JSON.stringify(earned.map(a=>a.id)));
+    newOnes.forEach(a => {
+      setTimeout(() => showToast(`🏅 Neuer Titel: ${a.emoji} ${a.title}!`), 500);
+    });
+  }
 }
 
 </script>
