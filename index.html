@@ -357,6 +357,56 @@
     <div id="achievementsList"></div>
   </div>
 
+  <!-- ADMIN PANEL -->
+
+  <div id="adminPanel" class="panel" style="padding:52px 16px 90px">
+    <div class="fu" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <div class="section-title">👑 Admin</div>
+        <span style="background:linear-gradient(135deg,#ffe14d,#ff8c42);color:#000;font-size:10px;font-weight:800;padding:3px 8px;border-radius:6px;font-family:'Space Grotesk',sans-serif">OWNER</span>
+      </div>
+      <div class="section-sub">Verwalte deine Gruppe</div>
+    </div>
+
+```
+<!-- Announcement -->
+<div class="my-card" style="margin-bottom:12px">
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:10px">📌 Ankündigung pinnen</div>
+  <textarea id="announcementInp" placeholder="Nachricht an die Gruppe..." style="width:100%;background:#050508;border:1px solid #1e1e35;border-radius:10px;padding:12px;color:#fff;font-size:13px;font-family:'Space Grotesk',sans-serif;outline:none;resize:none;min-height:80px"></textarea>
+  <button class="btn btn-primary" onclick="pinAnnouncement()" style="margin-top:10px;border-radius:10px">📌 Pinnen</button>
+</div>
+
+<!-- Custom Challenge -->
+<div class="my-card" style="margin-bottom:12px">
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:10px">🎯 Challenge erstellen</div>
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <input id="challengeTitleInp" class="inp" placeholder="Titel (z.B. Weekend Detox)" style="padding:11px 14px"/>
+    <input id="challengeDescInp" class="inp" placeholder="Beschreibung" style="padding:11px 14px"/>
+    <input id="challengePointsInp" class="inp" type="number" placeholder="Punkte (z.B. 500)" style="padding:11px 14px"/>
+    <input id="challengeDaysInp" class="inp" type="number" placeholder="Dauer in Tagen (z.B. 7)" style="padding:11px 14px"/>
+    <button class="btn btn-primary" onclick="createCustomChallenge()" style="border-radius:10px">🎯 Challenge erstellen</button>
+  </div>
+</div>
+
+<!-- Members management -->
+<div class="my-card" style="margin-bottom:12px">
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:10px">👥 Mitglieder verwalten</div>
+  <div id="adminMembersList"></div>
+</div>
+
+<!-- Fix minutes -->
+<div class="my-card" style="margin-bottom:12px">
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:10px">✏️ Minuten korrigieren</div>
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <select id="fixUserSelect" style="width:100%;background:#050508;border:1px solid #1e1e35;border-radius:10px;padding:12px;color:#fff;font-size:13px;outline:none"></select>
+    <input id="fixMinutesInp" class="inp" type="number" placeholder="Neue Minutenzahl" style="padding:11px 14px"/>
+    <button class="btn btn-primary" onclick="fixUserMinutes()" style="border-radius:10px">✓ Korrigieren</button>
+  </div>
+</div>
+```
+
+  </div>
+
   <!-- BOTTOM NAV -->
 
   <div class="bottom-nav">
@@ -374,6 +424,9 @@
     </button>
     <button class="nav-btn" onclick="setNav('profile',this)" id="navProfile">
       <span>👤</span><small>Profil</small>
+    </button>
+    <button class="nav-btn" onclick="setNav('admin',this)" id="navAdmin" style="display:none">
+      <span>👑</span><small>Admin</small>
     </button>
   </div>
 </div>
@@ -724,6 +777,7 @@ window.setNav = function(panel, btn) {
   if (panel==="challenges") renderChallenges();
   if (panel==="chat") renderChat();
   if (panel==="achievements") renderAchievements();
+  if (panel==="admin") renderAdmin();
 }
 
 let currentAvatar = "😎";
@@ -818,6 +872,9 @@ onAuthStateChanged(auth, async user => {
         members = snap3.docs.map(d=>({uid:d.id,...d.data()}));
         renderHome();
       checkNewAchievements();
+      showAdminNav();
+      renderAnnouncement();
+      setupCreatorMode();
       }
     );
   });
@@ -1040,7 +1097,270 @@ function checkNewAchievements() {
   earned.forEach(a => previouslyEarned.add(a.id));
 }
 
-</script>
 
+// ── ADMIN SYSTEM ─────────────────────────────────────────────
+const OWNER_UID = "JXDiVYjpbCcAdKKoMt9T8LM..."; // wird unten gesetzt
+
+function isOwner() {
+  return groupData && groupData.createdBy === currentUser?.uid;
+}
+
+function isAdmin() {
+  return isOwner() || (groupData?.admins||[]).includes(currentUser?.uid);
+}
+
+function showAdminNav() {
+  const btn = document.getElementById("navAdmin");
+  if (btn) btn.style.display = isAdmin() ? "flex" : "none";
+  // Update admin panel title
+  const title = document.querySelector("#adminPanel .section-title");
+  if (title) title.textContent = isOwner() ? "👑 Owner Panel" : "⚡ Admin Panel";
+}
+
+function renderAdmin() {
+  if (!isAdmin()) { showToast("Kein Zugriff"); return; }
+  
+  // Render members list
+  const list = document.getElementById("adminMembersList");
+  if (list) {
+    list.innerHTML = members.map(m => {
+      const isOwner = m.uid === groupData.createdBy;
+      const isOwnerNow = isOwner();
+      const isAdminMember = (groupData?.admins||[]).includes(m.uid);
+      const todayMin = m.scores?.[new Date().toISOString().slice(0,10)] ?? null;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #111">
+        <div style="font-size:20px">${m.avatar||m.name?.[0]||"?"}</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:700;color:#fff">${m.name} ${isOwner?'<span style="font-size:10px;color:#ffe14d">👑 Owner</span>':isAdminMember?'<span style="font-size:10px;color:#00e5a0">⚡ Admin</span>':""}</div>
+          <div style="font-size:11px;color:#444">${todayMin !== null ? todayMin+" Min heute" : "Noch nicht eingetragen"}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+          ${!isOwner && isOwnerNow ? `<button onclick="toggleAdmin('${m.uid}','${m.name}',${isAdminMember})" style="background:${isAdminMember?'#ffe14d22':'#00e5a022'};border:1px solid ${isAdminMember?'#ffe14d44':'#00e5a044'};border-radius:8px;padding:5px 8px;color:${isAdminMember?'#ffe14d':'#00e5a0'};font-size:10px;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif">${isAdminMember?'Admin entfernen':'Zum Admin'}</button>` : ""}
+          ${!isOwner ? `<button onclick="kickMember('${m.uid}','${m.name}')" style="background:#ff3b5c15;border:1px solid #ff3b5c33;border-radius:8px;padding:5px 8px;color:#ff3b5c;font-size:10px;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif">Kicken</button>` : ""}
+        </div>
+      </div>`;
+    }).join("");
+  }
+  
+  // Populate fix minutes dropdown
+  const select = document.getElementById("fixUserSelect");
+  if (select) {
+    select.innerHTML = members.map(m => 
+      `<option value="${m.uid}">${m.name}</option>`
+    ).join("");
+  }
+}
+
+window.pinAnnouncement = async function() {
+  const text = document.getElementById("announcementInp").value.trim();
+  if (!text) { showToast("Bitte Text eingeben"); return; }
+  try {
+    await updateDoc(doc(db,"groups",userData.groupId), {
+      announcement: text,
+      announcementAt: serverTimestamp()
+    });
+    document.getElementById("announcementInp").value = "";
+    showToast("📌 Ankündigung gepinnt!");
+  } catch(e) { showToast("Fehler: "+e.message); }
+}
+
+window.createCustomChallenge = async function() {
+  const title  = document.getElementById("challengeTitleInp").value.trim();
+  const desc   = document.getElementById("challengeDescInp").value.trim();
+  const points = parseInt(document.getElementById("challengePointsInp").value);
+  const days   = parseInt(document.getElementById("challengeDaysInp").value);
+  if (!title || !desc) { showToast("Titel und Beschreibung eingeben"); return; }
+  try {
+    await addDoc(collection(db,"challenges"), {
+      groupId: userData.groupId,
+      title, desc,
+      points: isNaN(points) ? 100 : points,
+      days:   isNaN(days)   ? 7   : days,
+      createdBy: currentUser.uid,
+      createdAt: serverTimestamp()
+    });
+    document.getElementById("challengeTitleInp").value = "";
+    document.getElementById("challengeDescInp").value = "";
+    document.getElementById("challengePointsInp").value = "";
+    document.getElementById("challengeDaysInp").value = "";
+    showToast("🎯 Challenge erstellt!");
+  } catch(e) { showToast("Fehler: "+e.message); }
+}
+
+window.toggleAdmin = async function(uid, name, currentlyAdmin) {
+  try {
+    const admins = groupData?.admins || [];
+    const newAdmins = currentlyAdmin 
+      ? admins.filter(a => a !== uid)
+      : [...admins, uid];
+    await updateDoc(doc(db,"groups",userData.groupId), {admins: newAdmins});
+    showToast(currentlyAdmin ? name+" ist kein Admin mehr" : "⚡ "+name+" ist jetzt Admin!");
+    renderAdmin();
+  } catch(e) { showToast("Fehler: "+e.message); }
+}
+
+window.kickMember = async function(uid, name) {
+  if (!confirm("Willst du " + name + " wirklich kicken?")) return;
+  try {
+    const mems = (groupData?.members||[]).filter(m => m !== uid);
+    await updateDoc(doc(db,"groups",userData.groupId), {members: mems});
+    await updateDoc(doc(db,"users",uid), {groupId: null});
+    showToast("✓ " + name + " wurde gekickt");
+    renderAdmin();
+  } catch(e) { showToast("Fehler: "+e.message); }
+}
+
+window.fixUserMinutes = async function() {
+  const uid = document.getElementById("fixUserSelect").value;
+  const m   = parseInt(document.getElementById("fixMinutesInp").value);
+  if (isNaN(m) || m < 0) { showToast("Ungültige Zahl"); return; }
+  try {
+    const targetUser = members.find(mb => mb.uid === uid);
+    if (!targetUser) return;
+    const scores = {...(targetUser.scores||{}), [new Date().toISOString().slice(0,10)]: m};
+    await updateDoc(doc(db,"users",uid), {scores});
+    document.getElementById("fixMinutesInp").value = "";
+    showToast("✓ Minuten korrigiert!");
+  } catch(e) { showToast("Fehler: "+e.message); }
+}
+
+// Show announcement in home if exists
+function renderAnnouncement() {
+  const existing = document.getElementById("announcementBanner");
+  if (existing) existing.remove();
+  if (!groupData?.announcement) return;
+  const banner = document.createElement("div");
+  banner.id = "announcementBanner";
+  banner.style.cssText = "background:#0a0f00;border:1px solid #ffe14d33;border-radius:12px;padding:12px 16px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start";
+  banner.innerHTML = `<span style="font-size:16px">📌</span><div><div style="font-size:11px;color:#ffe14d;margin-bottom:2px;font-family:'Space Grotesk',sans-serif;font-weight:700">ANKÜNDIGUNG</div><div style="font-size:13px;color:#ccc;font-family:'Space Grotesk',sans-serif">${groupData.announcement}</div></div>`;
+  const leaderboard = document.getElementById("leaderboard");
+  if (leaderboard) leaderboard.parentNode.insertBefore(banner, leaderboard);
+}
+
+// Add owner badge to achievements
+ACHIEVEMENTS.unshift({
+  id:"owner", emoji:"👑", title:"Owner", 
+  desc:"Du hast diese Gruppe gegründet",
+  premium:false,
+  check: (u) => isOwner()
+});
+
+ACHIEVEMENTS.unshift({
+  id:"creator", emoji:"🌍", title:"App Creator",
+  desc:"Du hast scrollless erschaffen",
+  premium:false,
+  check: (u) => isCreator()
+});
+
+
+// ── CREATOR / APP ADMIN SYSTEM ───────────────────────────────
+const CREATOR_UIDS = [
+  "JXDiVYjpbCcAdKKoMt9T8LMtlSD2",
+  "ehZUqMPZuGcZXH1uKdogvYVj7Y52"
+];
+
+function isCreator() {
+  return CREATOR_UIDS.includes(currentUser?.uid);
+}
+
+function setupCreatorMode() {
+  if (!isCreator()) return;
+  
+  // Add creator badge to nav
+  const nav = document.querySelector(".bottom-nav");
+  if (nav && !document.getElementById("navCreator")) {
+    const btn = document.createElement("button");
+    btn.id = "navCreator";
+    btn.className = "nav-btn";
+    btn.innerHTML = "<span>🌍</span><small>Creator</small>";
+    btn.onclick = () => {
+      document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+      document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+      document.getElementById("creatorPanel").classList.add("active");
+      btn.classList.add("active");
+      renderCreatorPanel();
+    };
+    nav.appendChild(btn);
+  }
+
+  // Show creator panel
+  if (!document.getElementById("creatorPanel")) {
+    const panel = document.createElement("div");
+    panel.id = "creatorPanel";
+    panel.className = "panel";
+    panel.style.cssText = "padding:52px 16px 90px";
+    panel.innerHTML = `
+      <div class="fu" style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+          <div class="section-title">🌍 Creator</div>
+          <span style="background:linear-gradient(135deg,#ff3b5c,#a855f7);color:#fff;font-size:10px;font-weight:800;padding:3px 8px;border-radius:6px;font-family:'Space Grotesk',sans-serif">APP CREATOR</span>
+        </div>
+        <div class="section-sub">Globaler App-Administrator</div>
+      </div>
+      <div id="creatorStats" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px"></div>
+      <div class="my-card" style="margin-bottom:12px">
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:10px">📢 Global-Ankündigung</div>
+        <textarea id="globalAnnouncementInp" placeholder="Nachricht an ALLE User..." style="width:100%;background:#050508;border:1px solid #1e1e35;border-radius:10px;padding:12px;color:#fff;font-size:13px;font-family:'Space Grotesk',sans-serif;outline:none;resize:none;min-height:80px"></textarea>
+
+```
+    <button class="btn btn-primary" onclick="sendGlobalAnnouncement()" style="margin-top:10px;border-radius:10px">📢 An alle senden</button>
+  </div>
+  <div class="my-card">
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:10px">👥 Alle Nutzer</div>
+    <div id="allUsersList" style="color:#444;font-size:13px">Lädt...</div>
+  </div>
+`;
+document.getElementById("appScreen").appendChild(panel);
+```
+
+}
+}
+
+async function renderCreatorPanel() {
+if (!isCreator()) return;
+
+// Fetch all users
+try {
+const snap = await getDocs(collection(db, “users”));
+const allUsers = snap.docs.map(d => ({uid:d.id, …d.data()}));
+const allGroups = await getDocs(collection(db, “groups”));
+
+```
+// Stats
+document.getElementById("creatorStats").innerHTML = [
+  {label:"Gesamt User",  value:allUsers.length,       color:"#4d9fff"},
+  {label:"Gruppen",      value:allGroups.size,         color:"#00e5a0"},
+  {label:"Heute aktiv",  value:allUsers.filter(u=>u.scores?.[new Date().toISOString().slice(0,10)]!==undefined).length, color:"#ffe14d"},
+  {label:"Mit Streak",   value:allUsers.filter(u=>(u.streak||0)>0).length, color:"#ff3b5c"},
+].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-value" style="color:${s.color}">${s.value}</div></div>`).join("");
+
+// Users list
+document.getElementById("allUsersList").innerHTML = allUsers
+  .sort((a,b) => (b.streak||0)-(a.streak||0))
+  .map(u => `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #0d0d1a">
+    <div style="font-size:18px">${u.avatar||u.name?.[0]||"?"}</div>
+    <div style="flex:1">
+      <div style="font-size:13px;font-weight:700;color:${CREATOR_UIDS.includes(u.uid)?'#a855f7':'#bbb'}">${u.name} ${CREATOR_UIDS.includes(u.uid)?'🌍':''}</div>
+      <div style="font-size:10px;color:#444">Streak: ${u.streak||0} · Heute: ${u.scores?.[new Date().toISOString().slice(0,10)]??'–'} Min</div>
+    </div>
+  </div>`).join("");
+```
+
+} catch(e) { document.getElementById(“allUsersList”).textContent = “Fehler: “+e.message; }
+}
+
+window.sendGlobalAnnouncement = async function() {
+const text = document.getElementById(“globalAnnouncementInp”).value.trim();
+if (!text) { showToast(“Text eingeben”); return; }
+try {
+await setDoc(doc(db,“app”,“announcement”), {
+text, createdAt: serverTimestamp(), from: userData?.name
+});
+document.getElementById(“globalAnnouncementInp”).value = “”;
+showToast(“📢 Global-Ankündigung gesendet!”);
+} catch(e) { showToast(“Fehler: “+e.message); }
+}
+
+</script>
 </body>
-</html> 
+</html>
