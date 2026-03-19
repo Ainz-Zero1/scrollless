@@ -725,13 +725,14 @@ function renderHome() {
     return `<div class="leaderboard-row ${isMe?'me':'other'}">
       ${isMe ? '<div class="me-bar"></div>' : ""}
       <div style="width:28px;text-align:center;flex-shrink:0;font-family:'Syne',sans-serif;font-size:${i<3?17:12}px;color:${i<3?t2.color:'#222'};font-weight:800">${rEmoji(i+1)}</div>
-      <div class="avatar ${isMe?'glow':'dark'}" style="width:36px;height:36px;font-size:${u.avatar?'20px':'14px'};${isMe?'color:#fff;border:2px solid #ff3b5c':'color:#555;border:2px solid #1e1e35'}">${(u.name||"?")[0].toUpperCase()}</div>
+      <div class="avatar ${isMe?'glow':'dark'}" style="width:36px;height:36px;font-size:${u.avatar?'20px':'14px'};${isMe?'color:#fff;border:2px solid #ff3b5c':'color:#555;border:2px solid #1e1e35'}">${u.avatar||(u.name||"?")[0].toUpperCase()}</div>
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
           <span style="font-weight:700;font-size:14px;color:${isMe?'#fff':'#bbb'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u.name}</span>
           ${isMe ? '<span class="me-tag">DU</span>' : ""}
           ${(u.streak||0)>2 ? '<span style="font-size:11px">🔥</span>' : ""}
         </div>
+        ${(()=>{ const earned=getEarnedAchievements(u); const top=earned[earned.length-1]; return top ? `<div style="font-size:10px;color:#555;margin-bottom:4px">${top.emoji} ${top.title}</div>` : ""; })()}
         <div class="score-bar-wrap"><div class="score-bar-fill" style="width:${pct}%;background:${t2.color}"></div></div>
       </div>
       <div style="text-align:right;flex-shrink:0">
