@@ -1242,14 +1242,14 @@ ACHIEVEMENTS.unshift({
   id:"owner", emoji:"👑", title:"Owner", 
   desc:"Du hast diese Gruppe gegründet",
   premium:false,
-  check: (u) => isOwner()
+  check: (u) => { try { return isOwner(); } catch(e) { return false; } }
 });
 
 ACHIEVEMENTS.unshift({
   id:"creator", emoji:"🌍", title:"App Creator",
   desc:"Du hast scrollless erschaffen",
   premium:false,
-  check: (u) => isCreator()
+  check: (u) => { try { return isCreator(); } catch(e) { return false; } }
 });
 
 
@@ -1288,6 +1288,7 @@ function setupCreatorMode() {
     const panel = document.createElement("div");
     panel.id = "creatorPanel";
     panel.className = "panel";
+    panel.setAttribute("data-noclear","true");
     panel.style.cssText = "padding:52px 16px 90px";
     panel.innerHTML = `
       <div class="fu" style="margin-bottom:16px">
