@@ -529,7 +529,8 @@ function renderHome() {
   const myMinutes = userData?.scores?.[todayStr] ?? null;
   const myTier    = myMinutes !== null ? tier(myMinutes) : null;
 
-  document.getElementById("myAvatar").textContent = (userData.name||"?")[0].toUpperCase();
+  document.getElementById("myAvatar").textContent = userData.avatar || (userData.name||"?")[0].toUpperCase();
+  if (userData.avatar) { document.getElementById("myAvatar").style.fontSize="28px"; document.getElementById("myAvatar").style.background="linear-gradient(135deg,#ff3b5c,#ff6b35)"; }
   document.getElementById("myName").textContent   = userData.name || "–";
 
   if (myMinutes !== null) {
@@ -578,7 +579,7 @@ function renderHome() {
     return `<div class="leaderboard-row ${isMe?'me':'other'}">
       ${isMe ? '<div class="me-bar"></div>' : ""}
       <div style="width:28px;text-align:center;flex-shrink:0;font-family:'Syne',sans-serif;font-size:${i<3?17:12}px;color:${i<3?t2.color:'#222'};font-weight:800">${rEmoji(i+1)}</div>
-      <div class="avatar ${isMe?'glow':'dark'}" style="width:36px;height:36px;font-size:14px;${isMe?'color:#fff;border:2px solid #ff3b5c':'color:#555;border:2px solid #1e1e35'}">${(u.name||"?")[0].toUpperCase()}</div>
+      <div class="avatar ${isMe?'glow':'dark'}" style="width:36px;height:36px;font-size:${u.avatar?'20px':'14px'};${isMe?'color:#fff;border:2px solid #ff3b5c':'color:#555;border:2px solid #1e1e35'}">${(u.name||"?")[0].toUpperCase()}</div>
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
           <span style="font-weight:700;font-size:14px;color:${isMe?'#fff':'#bbb'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u.name}</span>
@@ -634,7 +635,8 @@ function renderStats() {
 
 function renderProfile() {
   if (!userData) return;
-  document.getElementById("profileAvatar").textContent = (userData.name||"?")[0].toUpperCase();
+  document.getElementById("profileAvatar").textContent = userData.avatar || (userData.name||"?")[0].toUpperCase();
+  if (userData.avatar) currentAvatar = userData.avatar;
   document.getElementById("profileName").textContent   = userData.name||"–";
   document.getElementById("profileUsername").textContent = "@"+(userData.username||"–");
   if (groupData) {
@@ -728,8 +730,10 @@ onAuthStateChanged(auth, async user => {
     showScreen("appScreen");
     document.getElementById("proBtn").style.display = isPremium?"none":"block";
     document.getElementById("myName").textContent = userData.name||"–";
-    document.getElementById("myAvatar").textContent = (userData.name||"?")[0].toUpperCase();
-    document.getElementById("profileAvatar").textContent = (userData.name||"?")[0].toUpperCase();
+    document.getElementById("myAvatar").textContent = userData.avatar || (userData.name||"?")[0].toUpperCase();
+  if (userData.avatar) { document.getElementById("myAvatar").style.fontSize="28px"; document.getElementById("myAvatar").style.background="linear-gradient(135deg,#ff3b5c,#ff6b35)"; }
+    document.getElementById("profileAvatar").textContent = userData.avatar || (userData.name||"?")[0].toUpperCase();
+  if (userData.avatar) currentAvatar = userData.avatar;
 
     // Group doc
     onSnapshot(doc(db,"groups",userData.groupId), snap2 => {
