@@ -268,21 +268,37 @@
 
   <!-- PROFILE PANEL -->
 
+  <!-- CHALLENGES PANEL -->
+
+  <div id="challengesPanel" class="panel" style="padding:52px 16px 0">
+    <div class="fu" style="margin-bottom:24px">
+      <div class="section-title">Challenges</div>
+      <div class="section-sub">Beweise deiner Gruppe was du drauf hast</div>
+    </div>
+    <div id="challengesList"></div>
+  </div>
+
   <div id="profilePanel" class="panel" style="padding:52px 16px 0">
     <div class="fu" style="margin-bottom:28px">
       <div class="section-title">Profil</div>
     </div>
     <div class="my-card fu1" style="margin-bottom:14px">
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
-        <div class="avatar glow" id="profileAvatar" style="width:56px;height:56px;font-size:22px;color:#fff;border:2px solid #ff3b5c">?</div>
+        <div id="profileAvatar" style="width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;background:linear-gradient(135deg,#ff3b5c,#ff6b35);cursor:pointer;border:2px solid #ff3b5c" onclick="toggleAvatarPicker()">😎</div>
         <div>
           <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px" id="profileName">–</div>
           <div style="font-size:13px;color:#444" id="profileUsername">–</div>
+          <div style="font-size:11px;color:#555;margin-top:4px">Tippe auf Avatar zum Ändern</div>
         </div>
+      </div>
+      <!-- Avatar picker -->
+      <div id="avatarPicker" style="display:none;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+        <div style="width:100%;font-size:11px;color:#444;margin-bottom:4px">Avatar wählen:</div>
+        ${["😎","🔥","👑","💀","🎯","🏆","⚡","🦊","🐺","🎮","🚀","💪","🤖","👻","🦁"].map(e=>`<button onclick="setAvatar('${e}')" style="font-size:24px;background:#0a0a18;border:1px solid #1e1e35;border-radius:10px;padding:8px;cursor:pointer;transition:all 0.15s">${e}</button>`).join("")}
       </div>
       <div style="background:#050508;border-radius:12px;padding:12px 14px" id="profileGroup"></div>
     </div>
-    <div style="margin-bottom:14px" id="profileProBtn" style="display:none">
+    <div style="margin-bottom:14px" id="profileProBtn">
       <button class="btn btn-yellow" onclick="openPremium()">⭐ Auf Pro upgraden – 0,99€/Monat</button>
     </div>
     <button class="btn btn-ghost" onclick="handleSignOut()" style="border:1px solid #ff3b5c33;color:#ff3b5c;background:#ff3b5c15">Ausloggen</button>
@@ -293,6 +309,9 @@
   <div class="bottom-nav">
     <button class="nav-btn active" onclick="setNav('home',this)" id="navHome">
       <span>🏆</span><small>Ranking</small>
+    </button>
+    <button class="nav-btn" onclick="setNav('challenges',this)" id="navChallenges">
+      <span>🎯</span><small>Challenges</small>
     </button>
     <button class="nav-btn" onclick="setNav('stats',this)" id="navStats">
       <span>📊</span><small>Stats</small>
@@ -618,7 +637,56 @@ window.setNav = function(panel, btn) {
   btn.classList.add("active");
   if (panel==="stats") renderStats();
   if (panel==="profile") renderProfile();
+  if (panel==="challenges") renderChallenges();
 }
+
+let currentAvatar = "😎";
+window.toggleAvatarPicker = function() {
+  const p = document.getElementById("avatarPicker");
+  p.style.display = p.style.display === "flex" ? "none" : "flex";
+}
+window.setAvatar = async function(emoji) {
+  currentAvatar = emoji;
+  document.getElementById("profileAvatar").textContent = emoji;
+  document.getElementById("avatarPicker").style.display = "none";
+  if (currentUser) { try { await updateDoc(doc(db,"users",currentUser.uid), {avatar: emoji}); } catch(e){} }
+}
+
+const CHALLENGES = [
+  { id:"c1", emoji:"📵", title:"5h Woche", desc:"Diese Woche unter 5h Social Media gesamt", premium:false },
+  { id:"c2", emoji:"🌅", title:"Morgen-Frei", desc:"Erste Stunde nach dem Aufwachen kein Handy", premium:false },
+  { id:"c3", emoji:"🎯", title:"30-Tage-Streak", desc:"30 Tage unter 60 Min täglich", premium:true },
+  { id:"c4", emoji:"👥", title:"Gruppen-Battle", desc:"Wessen Gruppe ist diese Woche besser?", premium:true },
+];
+let joinedChallenges = {};
+
+function renderChallenges() {
+  document.getElementById("challengesList").innerHTML = CHALLENGES.map(c => {
+    const locked = c.premium && !isPremium;
+    const isJoined = joinedChallenges[c.id];
+    return `<div style="background:${locked?"#08080f":"#0a0a18"};border:1px solid ${isJoined?"#ff3b5c44":"#111"};border-radius:16px;padding:16px;margin-bottom:10px">
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <span style="font-size:28px">${c.emoji}</span>
+        <div style="flex:1">
+          <div style="font-family:Syne,sans-serif;font-weight:800;font-size:16px;color:${locked?"#333":"#fff"};margin-bottom:4px">${c.title} ${c.premium?"<span style=\"font-size:9px;color:#ffe14d;background:#ffe14d22;padding:2px 6px;border-radius:4px\">PRO</span>":""}</div>
+          <p style="font-size:13px;color:#444;margin-bottom:10px">${c.desc}</p>
+          ${locked
+            ? `<button onclick="openPremium()" style="background:#ffe14d22;border:1px solid #ffe14d44;border-radius:8px;padding:7px 12px;color:#ffe14d;font-size:11px;font-weight:700;cursor:pointer">🔓 Pro holen</button>`
+            : `<button onclick="toggleChallenge("${c.id}",this)" style="background:${isJoined?"#ff3b5c22":"linear-gradient(135deg,#ff3b5c,#ff6b35)"};border:${isJoined?"1px solid #ff3b5c44":"none"};border-radius:8px;padding:7px 14px;color:${isJoined?"#ff3b5c":"#fff"};font-size:11px;font-weight:700;cursor:pointer">${isJoined?"✓ Dabei":"Mitmachen"}</button>`
+          }
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+window.toggleChallenge = function(id) {
+  joinedChallenges[id] = !joinedChallenges[id];
+  renderChallenges();
+  showToast(joinedChallenges[id] ? "✓ Challenge beigetreten!" : "Challenge verlassen");
+}
+
+
 
 window.setTab = function(tab, btn) {
   document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
