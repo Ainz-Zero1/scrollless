@@ -499,7 +499,7 @@
     <!-- Global Announcement -->
     <div class="my-card" style="margin-bottom:12px">
       <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:10px">📢 Global-Banner</div>
-      <textarea id="globalAnnouncementInp" placeholder="Erscheint als Banner für ALLE User..." style="width:100%;background:#050508;border:1px solid #1e1e35;border-radius:10px;padding:12px;color:#fff;font-size:13px;font-family:'Space Grotesk',sans-serif;outline:none;resize:none;min-height:60px"></textarea>
+      <textarea id="globalAnnouncementInp" placeholder="Erscheint als Banner für ALLE User..." style="width:100%;background:#050508;border:1px solid #1e1e35;border-radius:10px;padding:12px;color:#fff;font-size:13px;font-family:'Space Grotesk',sans-serif;outline:none;resize:none;min-height:80px"></textarea>
       <div style="display:flex;gap:8px;margin-top:10px">
         <button class="btn btn-primary" onclick="sendGlobalAnnouncement()" style="border-radius:10px;flex:2">📢 An alle senden</button>
         <button class="btn btn-ghost" onclick="clearGlobalAnnouncement()" style="border-radius:10px;flex:1">✕ Löschen</button>
@@ -507,36 +507,10 @@
     </div>
 
 ```
-<!-- System message to group chat -->
-<div class="my-card" style="margin-bottom:12px">
-  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:10px">💬 System-Nachricht</div>
-  <select id="systemMsgGroup" style="width:100%;background:#050508;border:1px solid #1e1e35;border-radius:10px;padding:12px;color:#fff;font-size:13px;outline:none;margin-bottom:8px"></select>
-  <input id="systemMsgInp" class="inp" placeholder="Nachricht vom System..." style="padding:11px 14px;margin-bottom:8px"/>
-  <button class="btn btn-primary" onclick="sendSystemMessage()" style="border-radius:10px">💬 Senden</button>
-</div>
-
-<!-- Give title -->
-<div class="my-card" style="margin-bottom:12px">
-  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:10px">🎖️ Titel vergeben</div>
-  <select id="titleUserSelect" style="width:100%;background:#050508;border:1px solid #1e1e35;border-radius:10px;padding:12px;color:#fff;font-size:13px;outline:none;margin-bottom:8px"></select>
-  <input id="titleEmojiInp" class="inp" placeholder="Emoji (z.B. 🌙)" style="padding:11px 14px;margin-bottom:8px"/>
-  <input id="titleNameInp" class="inp" placeholder="Titel-Name (z.B. Mondkind)" style="padding:11px 14px;margin-bottom:8px"/>
-  <input id="titleDescInp" class="inp" placeholder="Beschreibung" style="padding:11px 14px;margin-bottom:8px"/>
-  <button class="btn btn-primary" onclick="giveCustomTitle()" style="border-radius:10px">🎖️ Titel vergeben</button>
-</div>
-
-<!-- Ban user -->
-<div class="my-card" style="margin-bottom:12px">
-  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:10px">🚫 User bannen</div>
-  <select id="banUserSelect" style="width:100%;background:#050508;border:1px solid #1e1e35;border-radius:10px;padding:12px;color:#fff;font-size:13px;outline:none;margin-bottom:8px"></select>
-  <input id="banReasonInp" class="inp" placeholder="Grund (optional)" style="padding:11px 14px;margin-bottom:8px"/>
-  <button style="background:#ff3b5c22;border:1px solid #ff3b5c44;border-radius:10px;padding:12px;color:#ff3b5c;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;cursor:pointer;width:100%" onclick="banUser()">🚫 User bannen</button>
-</div>
-
 <!-- All users -->
 <div class="my-card">
   <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:10px">👥 Alle Nutzer</div>
-  <div id="allUsersList" style="color:#444;font-size:13px">Tippe auf Creator Tab um zu laden...</div>
+  <div id="allUsersList" style="color:#444;font-size:13px">Lädt...</div>
 </div>
 ```
 
@@ -1603,19 +1577,6 @@ async function renderCreatorPanel() {
       {label:"Mit Streak", value:allUsersCache.filter(u=>(u.streak||0)>0).length, color:"#ff3b5c"},
     ].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-value" style="color:${s.color}">${s.value}</div></div>`).join("");
     
-    // Populate dropdowns
-    const userOptions = allUsersCache.map(u=>`<option value="${u.uid}">${u.name||"–"} (${u.uid.slice(0,8)})</option>`).join("");
-    ["titleUserSelect","banUserSelect"].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.innerHTML = userOptions;
-    });
-    
-    // Populate group dropdown for system message
-    const groupOptions = allGroups.map(g=>`<option value="${g.id}">${g.name||g.id}</option>`).join("");
-    const groupSel = document.getElementById("systemMsgGroup");
-    if (groupSel) groupSel.innerHTML = groupOptions;
-    
-    await populateCreatorDropdowns();
     document.getElementById("allUsersList").innerHTML = allUsersCache
       .sort((a,b)=>(b.streak||0)-(a.streak||0))
       .map(u=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #0d0d1a">
