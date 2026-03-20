@@ -1434,7 +1434,14 @@ ACHIEVEMENTS.unshift({
   id:"gorlock", emoji:"💥", title:"Gorlock the Destroyer",
   desc:"Gefürchtet. Unaufhaltsam. Einzigartig.",
   premium:false,
-  check: (u) => { try { return currentUser?.uid === "dgmla6iqs3hBWT3QG25WjjJRvLJ2"; } catch(e) { return false; } }
+  check: (u) => { try { return u.uid === "dgmla6iqs3hBWT3QG25WjjJRvLJ2"; } catch(e) { return false; } }
+});
+
+ACHIEVEMENTS.unshift({
+  id:"devilhunter", emoji:"😈", title:"Devil Hunter",
+  desc:"Jagt das Böse. Kennt keine Gnade.",
+  premium:false,
+  check: (u) => { try { return u.uid === "n7ingvYaCQhaTC62sUyR6OpOaZG2"; } catch(e) { return false; } }
 });
 
 
