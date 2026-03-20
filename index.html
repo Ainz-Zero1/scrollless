@@ -235,6 +235,18 @@
   <button class="btn btn-small" onclick="copyCode()">Kopieren</button>
 </div>
 
+<!-- Countdown -->
+<div id="countdownBanner" style="background:#0a0a18;border:1px solid #1e1e35;border-radius:12px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+  <div>
+    <div style="font-size:11px;color:#444;margin-bottom:2px">⏱️ DEADLINE HEUTE</div>
+    <div id="countdownTimer" style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff">--:--:--</div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:11px;color:#444;margin-bottom:2px">bis Mitternacht</div>
+    <div id="countdownStatus" style="font-size:12px;color:#555">Noch nicht eingetragen</div>
+  </div>
+</div>
+
 <div class="tabs">
   <button class="tab active" onclick="setTab('day',this)">Heute</button>
   <button class="tab" onclick="setTab('week',this)">Diese Woche</button>
@@ -430,6 +442,56 @@
     </div>
   </div>
 
+  <!-- WEEKLY REVIEW PANEL -->
+
+  <div id="weeklyPanel" class="panel" style="padding:52px 16px 90px">
+    <div class="fu" style="margin-bottom:16px">
+      <div class="section-title">📅 Wochenrückblick</div>
+      <div class="section-sub" id="weeklySubtitle">Diese Woche im Überblick</div>
+    </div>
+    <div id="weeklyContent"></div>
+  </div>
+
+  <!-- GROUP STYLE PANEL (Owner only) -->
+
+  <div id="groupStylePanel" class="panel" style="padding:52px 16px 90px">
+    <div class="fu" style="margin-bottom:16px">
+      <div class="section-title">🎨 Gruppen-Style</div>
+      <div class="section-sub">Passe deine Gruppe an</div>
+    </div>
+    <div class="my-card" style="margin-bottom:12px">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:12px">Gruppenname</div>
+      <input id="groupNameEdit" class="inp" placeholder="Neuer Gruppenname" style="padding:11px 14px;margin-bottom:10px"/>
+      <button class="btn btn-primary" onclick="saveGroupName()" style="border-radius:10px">✓ Speichern</button>
+    </div>
+    <div class="my-card" style="margin-bottom:12px">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:12px">Gruppenfarbe</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        <button onclick="setGroupColor('#ff3b5c')" style="width:44px;height:44px;border-radius:50%;background:#ff3b5c;border:3px solid transparent;cursor:pointer" id="color-ff3b5c"></button>
+        <button onclick="setGroupColor('#4d9fff')" style="width:44px;height:44px;border-radius:50%;background:#4d9fff;border:3px solid transparent;cursor:pointer" id="color-4d9fff"></button>
+        <button onclick="setGroupColor('#00e5a0')" style="width:44px;height:44px;border-radius:50%;background:#00e5a0;border:3px solid transparent;cursor:pointer" id="color-00e5a0"></button>
+        <button onclick="setGroupColor('#ffe14d')" style="width:44px;height:44px;border-radius:50%;background:#ffe14d;border:3px solid transparent;cursor:pointer" id="color-ffe14d"></button>
+        <button onclick="setGroupColor('#a855f7')" style="width:44px;height:44px;border-radius:50%;background:#a855f7;border:3px solid transparent;cursor:pointer" id="color-a855f7"></button>
+        <button onclick="setGroupColor('#ff8c42')" style="width:44px;height:44px;border-radius:50%;background:#ff8c42;border:3px solid transparent;cursor:pointer" id="color-ff8c42"></button>
+      </div>
+    </div>
+    <div class="my-card">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:8px">Gruppen-Emoji</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <button onclick="setGroupEmoji('🔥')" style="font-size:24px;background:#0a0a18;border:1px solid #1e1e35;border-radius:10px;padding:8px;cursor:pointer">🔥</button>
+        <button onclick="setGroupEmoji('👑')" style="font-size:24px;background:#0a0a18;border:1px solid #1e1e35;border-radius:10px;padding:8px;cursor:pointer">👑</button>
+        <button onclick="setGroupEmoji('💀')" style="font-size:24px;background:#0a0a18;border:1px solid #1e1e35;border-radius:10px;padding:8px;cursor:pointer">💀</button>
+        <button onclick="setGroupEmoji('🎯')" style="font-size:24px;background:#0a0a18;border:1px solid #1e1e35;border-radius:10px;padding:8px;cursor:pointer">🎯</button>
+        <button onclick="setGroupEmoji('⚡')" style="font-size:24px;background:#0a0a18;border:1px solid #1e1e35;border-radius:10px;padding:8px;cursor:pointer">⚡</button>
+        <button onclick="setGroupEmoji('🚀')" style="font-size:24px;background:#0a0a18;border:1px solid #1e1e35;border-radius:10px;padding:8px;cursor:pointer">🚀</button>
+        <button onclick="setGroupEmoji('🏆')" style="font-size:24px;background:#0a0a18;border:1px solid #1e1e35;border-radius:10px;padding:8px;cursor:pointer">🏆</button>
+        <button onclick="setGroupEmoji('💎')" style="font-size:24px;background:#0a0a18;border:1px solid #1e1e35;border-radius:10px;padding:8px;cursor:pointer">💎</button>
+        <button onclick="setGroupEmoji('👊')" style="font-size:24px;background:#0a0a18;border:1px solid #1e1e35;border-radius:10px;padding:8px;cursor:pointer">👊</button>
+        <button onclick="setGroupEmoji('🌍')" style="font-size:24px;background:#0a0a18;border:1px solid #1e1e35;border-radius:10px;padding:8px;cursor:pointer">🌍</button>
+      </div>
+    </div>
+  </div>
+
   <!-- BOTTOM NAV -->
 
   <div class="bottom-nav">
@@ -447,6 +509,9 @@
     </button>
     <button class="nav-btn" onclick="setNav('profile',this)" id="navProfile">
       <span>👤</span><small>Profil</small>
+    </button>
+    <button class="nav-btn" onclick="setNav('weekly',this);renderWeekly()" id="navWeekly">
+      <span>📅</span><small>Woche</small>
     </button>
     <button class="nav-btn" onclick="setNav('admin',this)" id="navAdmin" style="display:none">
       <span>👑</span><small>Admin</small>
@@ -811,6 +876,7 @@ window.setNav = function(panel, btn) {
   if (panel==="chat") renderChat();
   if (panel==="achievements") renderAchievements();
   if (panel==="admin") renderAdmin();
+  if (panel==="weekly") renderWeekly();
 }
 
 let currentAvatar = "😎";
@@ -908,6 +974,8 @@ onAuthStateChanged(auth, async user => {
       showAdminNav();
       renderAnnouncement();
       setupCreatorMode();
+      applyGroupStyle();
+      startCountdown();
       }
     );
   });
@@ -1395,6 +1463,166 @@ window.setActiveTitle = async function(titleId) {
     document.getElementById("titleSelectArea").style.display = "none";
     renderAchievements();
   } catch(e) { showToast("Fehler: "+e.message); }
+}
+
+
+// ── COUNTDOWN ────────────────────────────────────────────────
+function startCountdown() {
+  function update() {
+    const now = new Date();
+    const midnight = new Date();
+    midnight.setHours(24,0,0,0);
+    const diff = midnight - now;
+    const h = Math.floor(diff/3600000);
+    const m = Math.floor((diff%3600000)/60000);
+    const s = Math.floor((diff%60000)/1000);
+    const el = document.getElementById("countdownTimer");
+    if (el) el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    
+    const todayMin = userData?.scores?.[today()];
+    const statusEl = document.getElementById("countdownStatus");
+    if (statusEl) {
+      if (todayMin !== undefined) {
+        statusEl.textContent = "✓ Heute eingetragen";
+        statusEl.style.color = "#00e5a0";
+      } else if (h < 2) {
+        statusEl.textContent = "⚠️ Beeil dich!";
+        statusEl.style.color = "#ff3b5c";
+      } else {
+        statusEl.textContent = "Noch nicht eingetragen";
+        statusEl.style.color = "#555";
+      }
+    }
+  }
+  update();
+  setInterval(update, 1000);
+}
+
+// ── WEEKLY REVIEW ─────────────────────────────────────────────
+function renderWeekly() {
+  if (!userData) return;
+  const scores = userData?.scores || {};
+  const days = ["Mo","Di","Mi","Do","Fr","Sa","So"];
+  
+  // Get last 7 days
+  const last7 = Array.from({length:7},(_,i) => {
+    const d = new Date(Date.now()-i*86400000);
+    const str = d.toISOString().slice(0,10);
+    const dayIdx = d.getDay();
+    return {date:str, day:days[dayIdx===0?6:dayIdx-1], minutes:scores[str]??null};
+  }).reverse();
+
+  const withData = last7.filter(d=>d.minutes!==null);
+  const avg = withData.length ? Math.round(withData.reduce((a,b)=>a+b.minutes,0)/withData.length) : null;
+  const best = withData.length ? last7.find(d=>d.minutes===Math.min(...withData.map(d=>d.minutes))) : null;
+  const worst = withData.length ? last7.find(d=>d.minutes===Math.max(...withData.map(d=>d.minutes))) : null;
+  const totalMins = withData.reduce((a,b)=>a+b.minutes,0);
+  const isSunday = new Date().getDay() === 0;
+
+  document.getElementById("weeklySubtitle").textContent = isSunday ? "Dein Wochenrückblick 🎉" : "Woche läuft noch...";
+
+  document.getElementById("weeklyContent").innerHTML = `
+    <!-- Summary cards -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div class="stat-card"><div class="stat-label">Gesamt diese Woche</div><div class="stat-value" style="color:#4d9fff">${withData.length?Math.floor(totalMins/60)+"h "+totalMins%60+"m":"–"}</div></div>
+      <div class="stat-card"><div class="stat-label">Tages-Durchschnitt</div><div class="stat-value" style="color:#00e5a0">${avg!==null?fmt(avg):"–"}</div></div>
+      <div class="stat-card"><div class="stat-label">Bester Tag</div><div class="stat-value" style="color:#ffe14d">${best?best.day+" "+fmt(best.minutes):"–"}</div></div>
+      <div class="stat-card"><div class="stat-label">Schwächster Tag</div><div class="stat-value" style="color:#ff3b5c">${worst&&worst!==best?worst.day+" "+fmt(worst.minutes):"–"}</div></div>
+    </div>
+
+    <!-- Day by day -->
+    <div class="my-card" style="margin-bottom:14px">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:14px">Tag für Tag</div>
+      ${last7.map(d => {
+        const t2 = d.minutes!==null ? tier(d.minutes) : null;
+        const pct = d.minutes!==null ? Math.min(100,(d.minutes/180)*100) : 0;
+        const isToday = d.date===today();
+        return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          <div style="width:28px;font-family:'Space Grotesk',sans-serif;font-size:12px;color:${isToday?'#fff':'#444'};font-weight:${isToday?700:400}">${d.day}</div>
+          <div style="flex:1;height:8px;background:#111;border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${t2?t2.color:'#222'};border-radius:4px;transition:width 1s ease"></div>
+          </div>
+          <div style="width:50px;text-align:right;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:${t2?t2.color:'#333'}">${d.minutes!==null?fmt(d.minutes):"–"}</div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <!-- Group comparison -->
+    <div class="my-card">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:12px">👥 Gruppenvergleich diese Woche</div>
+      ${members.map(m => {
+        const weekMins = Array.from({length:7},(_,i)=>new Date(Date.now()-i*86400000).toISOString().slice(0,10))
+          .reduce((sum,d)=>sum+(m.scores?.[d]||0),0);
+        return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <div style="font-size:18px">${m.avatar||m.name?.[0]||"?"}</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;color:#bbb;margin-bottom:3px">${m.name}</div>
+            <div style="height:4px;background:#111;border-radius:2px;overflow:hidden">
+              <div style="height:100%;width:${Math.min(100,(weekMins/600)*100)}%;background:#ff3b5c;border-radius:2px"></div>
+            </div>
+          </div>
+          <div style="font-size:12px;color:#555;font-weight:700">${weekMins?fmt(weekMins):"–"}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+// ── GROUP STYLE ───────────────────────────────────────────────
+window.saveGroupName = async function() {
+  const name = document.getElementById("groupNameEdit").value.trim();
+  if (!name) { showToast("Name eingeben"); return; }
+  try {
+    await updateDoc(doc(db,"groups",userData.groupId), {name});
+    showToast("✓ Gruppenname geändert!");
+  } catch(e) { showToast("Fehler: "+e.message); }
+}
+
+window.setGroupColor = async function(color) {
+  try {
+    await updateDoc(doc(db,"groups",userData.groupId), {color});
+    // Update UI accent color
+    document.documentElement.style.setProperty('--accent', color);
+    document.querySelectorAll('[id^="color-"]').forEach(b => b.style.border = "3px solid transparent");
+    const btn = document.getElementById("color-"+color.replace('#',''));
+    if (btn) btn.style.border = "3px solid #fff";
+    showToast("✓ Farbe geändert!");
+  } catch(e) { showToast("Fehler: "+e.message); }
+}
+
+window.setGroupEmoji = async function(emoji) {
+  try {
+    await updateDoc(doc(db,"groups",userData.groupId), {emoji});
+    showToast("✓ Emoji geändert!");
+  } catch(e) { showToast("Fehler: "+e.message); }
+}
+
+function applyGroupStyle() {
+  if (!groupData) return;
+  if (groupData.color) {
+    // Apply color to accent elements
+    document.querySelectorAll('.btn-primary').forEach(b => {
+      b.style.background = `linear-gradient(135deg,${groupData.color},${groupData.color}aa)`;
+    });
+  }
+  // Show group style button for owner
+  if (isOwner()) {
+    const existing = document.getElementById("groupStyleBtn");
+    if (!existing) {
+      const btn = document.createElement("button");
+      btn.id = "groupStyleBtn";
+      btn.style.cssText = "background:#0a0a18;border:1px solid #1e1e35;border-radius:10px;padding:7px 12px;color:#888;font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;cursor:pointer";
+      btn.textContent = "🎨 Style";
+      btn.onclick = () => {
+        document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+        document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+        document.getElementById("groupStylePanel").classList.add("active");
+        if (groupData?.name) document.getElementById("groupNameEdit").value = groupData.name;
+      };
+      const headerTop = document.querySelector(".header-top");
+      if (headerTop) headerTop.appendChild(btn);
+    }
+  }
 }
 
 </script>
