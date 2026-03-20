@@ -1295,17 +1295,26 @@ function renderAchievements() {
       </div>`;
   }
 
+  // Special titles only visible to their owner
+  const SPECIAL_TITLE_IDS = ["gorlock","devilhunter","overlord","masterzero","creator"];
+  
   // Show all achievements
-  document.getElementById("achievementsList").innerHTML = ACHIEVEMENTS.map(a => {
+  document.getElementById("achievementsList").innerHTML = ACHIEVEMENTS.filter(a => {
+    // Hide special titles if this user hasn't earned them
+    if (SPECIAL_TITLE_IDS.includes(a.id) && !earnedIds.includes(a.id)) return false;
+    return true;
+  }).map(a => {
     const isEarned = earnedIds.includes(a.id);
     const isLocked = a.premium && !isPremium;
-    return `<div style="background:${isEarned?'linear-gradient(135deg,#0f0f1e,#1a0a0f)':'#080810'};border:1px solid ${isEarned?'#ff3b5c33':'#111'};border-radius:14px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;opacity:${isLocked?0.5:1}">
+    const isSpecial = SPECIAL_TITLE_IDS.includes(a.id);
+    return `<div style="background:${isEarned?'linear-gradient(135deg,#0f0f1e,#1a0a0f)':'#080810'};border:1px solid ${isEarned?(isSpecial?'#ffe14d44':'#ff3b5c33'):'#111'};border-radius:14px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;opacity:${isLocked?0.5:1}">
       <div style="font-size:${isEarned?'32':'28'}px;filter:${isEarned?'none':'grayscale(1)'}">${isLocked?'🔒':a.emoji}</div>
       <div style="flex:1">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
           <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:${isEarned?'#fff':'#555'}">${a.title}</span>
           ${a.premium?'<span style="font-size:9px;color:#ffe14d;background:#ffe14d22;padding:2px 5px;border-radius:4px;font-weight:700">PRO</span>':""}
-          ${isEarned?'<span style="font-size:9px;color:#00e5a0;background:#00e5a022;padding:2px 5px;border-radius:4px;font-weight:700">✓ VERDIENT</span>':""}
+          ${isSpecial&&isEarned?'<span style="font-size:9px;color:#ffe14d;background:#ffe14d22;padding:2px 5px;border-radius:4px;font-weight:700">✦ EXKLUSIV</span>':""}
+          ${isEarned&&!isSpecial?'<span style="font-size:9px;color:#00e5a0;background:#00e5a022;padding:2px 5px;border-radius:4px;font-weight:700">✓ VERDIENT</span>':""}
         </div>
         <div style="font-size:12px;color:#444">${a.desc}</div>
       </div>
