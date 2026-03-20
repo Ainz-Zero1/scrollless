@@ -799,10 +799,7 @@ function renderHome() {
           ${(u.streak||0)>2 ? '<span style="font-size:11px">🔥</span>' : ""}
         </div>
         ${(()=>{ 
-          const earned=getEarnedAchievements(u); 
-          if (!earned.length) return "";
-          const saved = u.activeTitle ? earned.find(a=>a.id===u.activeTitle) : null;
-          const top = saved || earned[earned.length-1]; 
+          const top = getActiveTitle(u);
           return top ? `<div style="font-size:10px;color:#555;margin-bottom:4px">${top.emoji} ${top.title}</div>` : ""; 
         })()}
         <div class="score-bar-wrap"><div class="score-bar-fill" style="width:${pct}%;background:${t2.color}"></div></div>
@@ -1168,10 +1165,26 @@ const ACHIEVEMENTS = [
 ];
 
 function getEarnedAchievements(u) {
+  const isThisUserCreator = CREATOR_UIDS.includes(u.uid);
+  const isThisUserOwner = groupData && groupData.createdBy === u.uid;
   return ACHIEVEMENTS.filter(a => {
-    if (a.premium && !isPremium) return false;
-    try { return a.check(u); } catch(e) { return false; }
+    try {
+      // Special titles based on uid directly
+      if (a.id === "creator" || a.id === "overlord" || a.id === "masterzero") return isThisUserCreator;
+      if (a.id === "gorlock") return u.uid === "dgmla6iqs3hBWT3QG25WjjJRvLJ2";
+      if (a.id === "owner") return isThisUserOwner;
+      // Premium check only for current user
+      if (a.premium && u.uid === currentUser?.uid && !isPremium) return false;
+      return a.check(u);
+    } catch(e) { return false; }
   });
+}
+
+function getActiveTitle(u) {
+  const earned = getEarnedAchievements(u);
+  if (!earned.length) return null;
+  const saved = u.activeTitle ? earned.find(a => a.id === u.activeTitle) : null;
+  return saved || earned[earned.length-1];
 }
 
 function renderAchievements() {
@@ -1180,9 +1193,7 @@ function renderAchievements() {
   const earnedIds = earned.map(a => a.id);
   
   // Get active title from userData or use last earned
-  const savedTitleId = userData?.activeTitle;
-  const savedTitle = earned.find(a => a.id === savedTitleId);
-  const activeTitle = savedTitle || earned[earned.length-1];
+  const activeTitle = getActiveTitle(userData);
   
   document.getElementById("myTitleDisplay").innerHTML = activeTitle 
     ? `<div style="background:linear-gradient(135deg,#0f0f1e,#1a0a0f);border:1px solid #ff3b5c33;border-radius:14px;padding:16px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="toggleTitleSelect()">
