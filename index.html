@@ -963,14 +963,30 @@ onAuthStateChanged(auth, async user => {
       if (snap2.exists()) {
         groupData = {id:snap2.id,...snap2.data()};
         // Apply group style whenever group data changes
-        if (groupData.name) document.getElementById("groupLabel").textContent = groupData.name + " · " + members.length + " Mitglieder";
-        if (groupData.emoji) document.getElementById("groupLabel").textContent = (groupData.emoji||"") + " " + (groupData.name||"Gruppe") + " · " + members.length + " Mitglieder";
+        // Update group label
+        const emoji = groupData.emoji || "";
+        const gname = groupData.name || "Gruppe";
+        const glabel = document.getElementById("groupLabel");
+        if (glabel) glabel.textContent = emoji + (emoji?" ":"") + gname + " · " + members.length + " Mitglieder";
+        
+        // Apply color everywhere
         if (groupData.color) {
-          document.querySelectorAll(".btn-primary").forEach(b => {
-            b.style.background = "linear-gradient(135deg," + groupData.color + "," + groupData.color + "aa)";
-          });
-          document.querySelectorAll(".me-bar").forEach(b => b.style.background = "linear-gradient(180deg," + groupData.color + "," + groupData.color + "aa)");
-          document.querySelectorAll(".avatar.glow").forEach(b => b.style.background = "linear-gradient(135deg," + groupData.color + "," + groupData.color + "aa)");
+          const c = groupData.color;
+          // Buttons
+          document.querySelectorAll(".btn-primary").forEach(b => b.style.background = "linear-gradient(135deg,"+c+","+c+"99)");
+          // My card border
+          const myCard = document.querySelector(".my-card");
+          if (myCard) myCard.style.borderColor = c+"44";
+          // Me bar in leaderboard
+          document.querySelectorAll(".me-bar").forEach(b => b.style.background = "linear-gradient(180deg,"+c+","+c+"99)");
+          // Glow avatar
+          document.querySelectorAll(".avatar.glow").forEach(b => { b.style.background = "linear-gradient(135deg,"+c+","+c+"99)"; b.style.borderColor = c; b.style.boxShadow = "0 0 14px "+c+"55"; });
+          // Tab active
+          document.querySelectorAll(".tab.active").forEach(b => b.style.background = "linear-gradient(135deg,"+c+","+c+"99)");
+          // Score bars
+          document.querySelectorAll(".score-bar-fill").forEach(b => { if(b.style.background.includes("ff3b5c")) b.style.background = c; });
+          // Nav active
+          document.querySelectorAll(".nav-btn.active small").forEach(b => b.style.color = c);
         }
       }
     });
