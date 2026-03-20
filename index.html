@@ -496,15 +496,50 @@
       <div class="section-sub">Globaler App-Administrator</div>
     </div>
     <div id="creatorStats" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px"></div>
+    <!-- Global Announcement -->
     <div class="my-card" style="margin-bottom:12px">
-      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:10px">📢 Global-Ankündigung</div>
-      <textarea id="globalAnnouncementInp" placeholder="Nachricht an ALLE User..." style="width:100%;background:#050508;border:1px solid #1e1e35;border-radius:10px;padding:12px;color:#fff;font-size:13px;font-family:'Space Grotesk',sans-serif;outline:none;resize:none;min-height:80px"></textarea>
-      <button class="btn btn-primary" onclick="sendGlobalAnnouncement()" style="margin-top:10px;border-radius:10px">📢 An alle senden</button>
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:10px">📢 Global-Banner</div>
+      <textarea id="globalAnnouncementInp" placeholder="Erscheint als Banner für ALLE User..." style="width:100%;background:#050508;border:1px solid #1e1e35;border-radius:10px;padding:12px;color:#fff;font-size:13px;font-family:'Space Grotesk',sans-serif;outline:none;resize:none;min-height:60px"></textarea>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn btn-primary" onclick="sendGlobalAnnouncement()" style="border-radius:10px;flex:2">📢 An alle senden</button>
+        <button class="btn btn-ghost" onclick="clearGlobalAnnouncement()" style="border-radius:10px;flex:1">✕ Löschen</button>
+      </div>
     </div>
-    <div class="my-card">
-      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:10px">👥 Alle Nutzer</div>
-      <div id="allUsersList" style="color:#444;font-size:13px">Tippe auf Creator Tab um zu laden...</div>
-    </div>
+
+```
+<!-- System message to group chat -->
+<div class="my-card" style="margin-bottom:12px">
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:10px">💬 System-Nachricht</div>
+  <select id="systemMsgGroup" style="width:100%;background:#050508;border:1px solid #1e1e35;border-radius:10px;padding:12px;color:#fff;font-size:13px;outline:none;margin-bottom:8px"></select>
+  <input id="systemMsgInp" class="inp" placeholder="Nachricht vom System..." style="padding:11px 14px;margin-bottom:8px"/>
+  <button class="btn btn-primary" onclick="sendSystemMessage()" style="border-radius:10px">💬 Senden</button>
+</div>
+
+<!-- Give title -->
+<div class="my-card" style="margin-bottom:12px">
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:10px">🎖️ Titel vergeben</div>
+  <select id="titleUserSelect" style="width:100%;background:#050508;border:1px solid #1e1e35;border-radius:10px;padding:12px;color:#fff;font-size:13px;outline:none;margin-bottom:8px"></select>
+  <input id="titleEmojiInp" class="inp" placeholder="Emoji (z.B. 🌙)" style="padding:11px 14px;margin-bottom:8px"/>
+  <input id="titleNameInp" class="inp" placeholder="Titel-Name (z.B. Mondkind)" style="padding:11px 14px;margin-bottom:8px"/>
+  <input id="titleDescInp" class="inp" placeholder="Beschreibung" style="padding:11px 14px;margin-bottom:8px"/>
+  <button class="btn btn-primary" onclick="giveCustomTitle()" style="border-radius:10px">🎖️ Titel vergeben</button>
+</div>
+
+<!-- Ban user -->
+<div class="my-card" style="margin-bottom:12px">
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:10px">🚫 User bannen</div>
+  <select id="banUserSelect" style="width:100%;background:#050508;border:1px solid #1e1e35;border-radius:10px;padding:12px;color:#fff;font-size:13px;outline:none;margin-bottom:8px"></select>
+  <input id="banReasonInp" class="inp" placeholder="Grund (optional)" style="padding:11px 14px;margin-bottom:8px"/>
+  <button style="background:#ff3b5c22;border:1px solid #ff3b5c44;border-radius:10px;padding:12px;color:#ff3b5c;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;cursor:pointer;width:100%" onclick="banUser()">🚫 User bannen</button>
+</div>
+
+<!-- All users -->
+<div class="my-card">
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:10px">👥 Alle Nutzer</div>
+  <div id="allUsersList" style="color:#444;font-size:13px">Tippe auf Creator Tab um zu laden...</div>
+</div>
+```
+
   </div>
 
   <!-- WEEKLY REVIEW PANEL -->
@@ -1009,6 +1044,15 @@ onAuthStateChanged(auth, async user => {
   onSnapshot(doc(db,"users",user.uid), async snap => {
     if (!snap.exists()) return;
     userData = {uid:user.uid, ...snap.data()};
+    
+    // Check if banned
+    if (userData.banned) {
+      showScreen("authScreen");
+      document.getElementById("authErr").textContent = "🚫 Dein Account wurde gesperrt: " + (userData.banReason||"Kein Grund");
+      document.getElementById("authErr").style.display = "block";
+      await signOut(auth);
+      return;
+    }
 
     if (!userData.groupId) { showScreen("groupScreen"); return; }
 
@@ -1232,7 +1276,15 @@ const ACHIEVEMENTS = [
 function getEarnedAchievements(u) {
   const isThisUserCreator = CREATOR_UIDS.includes(u.uid);
   const isThisUserOwner = groupData && groupData.createdBy === u.uid;
-  return ACHIEVEMENTS.filter(a => {
+  // Add custom title if exists
+  let achievements = ACHIEVEMENTS;
+  if (u.customTitle) {
+    const customId = u.customTitle.id || "custom";
+    if (!achievements.find(a=>a.id===customId)) {
+      achievements = [{...u.customTitle, premium:false, check:()=>true}, ...achievements];
+    }
+  }
+  return achievements.filter(a => {
     try {
       // Special titles based on uid directly
       if (a.id === "creator" || a.id === "overlord" || a.id === "masterzero") return isThisUserCreator;
@@ -1540,22 +1592,38 @@ async function renderCreatorPanel() {
   if (!isCreator()) return;
   try {
     const snap = await getDocs(collection(db,"users"));
-    const allUsers = snap.docs.map(d=>({uid:d.id,...d.data()}));
+    allUsersCache = snap.docs.map(d=>({uid:d.id,...d.data()}));
     const groupSnap = await getDocs(collection(db,"groups"));
+    const allGroups = groupSnap.docs.map(d=>({id:d.id,...d.data()}));
+    
     document.getElementById("creatorStats").innerHTML = [
-      {label:"Gesamt User", value:allUsers.length, color:"#4d9fff"},
-      {label:"Gruppen", value:groupSnap.size, color:"#00e5a0"},
-      {label:"Heute aktiv", value:allUsers.filter(u=>u.scores?.[new Date().toISOString().slice(0,10)]!==undefined).length, color:"#ffe14d"},
-      {label:"Mit Streak", value:allUsers.filter(u=>(u.streak||0)>0).length, color:"#ff3b5c"},
+      {label:"Gesamt User", value:allUsersCache.length, color:"#4d9fff"},
+      {label:"Gruppen", value:allGroups.length, color:"#00e5a0"},
+      {label:"Heute aktiv", value:allUsersCache.filter(u=>u.scores?.[new Date().toISOString().slice(0,10)]!==undefined).length, color:"#ffe14d"},
+      {label:"Mit Streak", value:allUsersCache.filter(u=>(u.streak||0)>0).length, color:"#ff3b5c"},
     ].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-value" style="color:${s.color}">${s.value}</div></div>`).join("");
-    document.getElementById("allUsersList").innerHTML = allUsers
+    
+    // Populate dropdowns
+    const userOptions = allUsersCache.map(u=>`<option value="${u.uid}">${u.name||"–"} (${u.uid.slice(0,8)})</option>`).join("");
+    ["titleUserSelect","banUserSelect"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = userOptions;
+    });
+    
+    // Populate group dropdown for system message
+    const groupOptions = allGroups.map(g=>`<option value="${g.id}">${g.name||g.id}</option>`).join("");
+    const groupSel = document.getElementById("systemMsgGroup");
+    if (groupSel) groupSel.innerHTML = groupOptions;
+    
+    document.getElementById("allUsersList").innerHTML = allUsersCache
       .sort((a,b)=>(b.streak||0)-(a.streak||0))
       .map(u=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #0d0d1a">
         <div style="font-size:18px">${u.avatar||u.name?.[0]||"?"}</div>
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:700;color:${CREATOR_UIDS.includes(u.uid)?"#a855f7":"#bbb"}">${u.name||"–"} ${CREATOR_UIDS.includes(u.uid)?"🌍":""}</div>
-          <div style="font-size:10px;color:#444">Streak: ${u.streak||0} · Heute: ${u.scores?.[new Date().toISOString().slice(0,10)]??"–"} Min</div>
+          <div style="font-size:13px;font-weight:700;color:${CREATOR_UIDS.includes(u.uid)?"#a855f7":u.banned?"#ff3b5c":"#bbb"}">${u.name||"–"} ${CREATOR_UIDS.includes(u.uid)?"🌍":""} ${u.banned?"🚫":""}</div>
+          <div style="font-size:10px;color:#444">Streak: ${u.streak||0} · Heute: ${u.scores?.[new Date().toISOString().slice(0,10)]??"–"} Min · ${u.customTitle?u.customTitle.emoji+" "+u.customTitle.title:""}</div>
         </div>
+        ${u.banned?`<button onclick="unbanUser('${u.uid}')" style="background:#00e5a022;border:1px solid #00e5a044;border-radius:8px;padding:5px 8px;color:#00e5a0;font-size:10px;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif">Entbannen</button>`:""}
       </div>`).join("");
   } catch(e) { showToast("Fehler: "+e.message); }
 }
@@ -1744,6 +1812,96 @@ function applyGroupStyle() {
       if (headerTop) headerTop.appendChild(btn);
     }
   }
+}
+
+
+// ── GLOBAL ANNOUNCEMENT LISTENER (für alle User) ─────────────
+function listenGlobalAnnouncement() {
+  onSnapshot(doc(db,"app","announcement"), snap => {
+    const existing = document.getElementById("globalBanner");
+    if (existing) existing.remove();
+    if (!snap.exists() || !snap.data().text) return;
+    const data = snap.data();
+    const banner = document.createElement("div");
+    banner.id = "globalBanner";
+    banner.style.cssText = "background:linear-gradient(135deg,#1a0a00,#0f0800);border:1px solid #ff8c4244;border-radius:12px;padding:12px 16px;margin:0 16px 12px;display:flex;gap:10px;align-items:flex-start;position:relative";
+    banner.innerHTML = `
+      <span style="font-size:18px">📢</span>
+      <div style="flex:1">
+        <div style="font-size:10px;color:#ff8c42;margin-bottom:2px;font-family:'Space Grotesk',sans-serif;font-weight:700">NACHRICHT VON SCROLLLESS</div>
+        <div style="font-size:13px;color:#fff;font-family:'Space Grotesk',sans-serif">${data.text}</div>
+      </div>
+      <button onclick="document.getElementById('globalBanner').remove()" style="background:none;border:none;color:#444;font-size:16px;cursor:pointer;padding:0">✕</button>
+    `;
+    // Insert at top of home panel
+    const homePanel = document.getElementById("homePanel");
+    if (homePanel) homePanel.insertBefore(banner, homePanel.firstChild);
+  });
+}
+
+window.clearGlobalAnnouncement = async function() {
+  try {
+    await setDoc(doc(db,"app","announcement"), {text:"", clearedAt: serverTimestamp()});
+    showToast("✓ Banner gelöscht");
+  } catch(e) { showToast("Fehler: "+e.message); }
+}
+
+window.sendSystemMessage = async function() {
+  const groupId = document.getElementById("systemMsgGroup").value;
+  const text = document.getElementById("systemMsgInp").value.trim();
+  if (!text || !groupId) { showToast("Gruppe und Text eingeben"); return; }
+  try {
+    await addDoc(collection(db,"messages"), {
+      groupId,
+      uid: "SYSTEM",
+      name: "scrollless",
+      avatar: "📢",
+      text,
+      isSystem: true,
+      createdAt: serverTimestamp()
+    });
+    document.getElementById("systemMsgInp").value = "";
+    showToast("💬 System-Nachricht gesendet!");
+  } catch(e) { showToast("Fehler: "+e.message); }
+}
+
+window.giveCustomTitle = async function() {
+  const uid = document.getElementById("titleUserSelect").value;
+  const emoji = document.getElementById("titleEmojiInp").value.trim();
+  const name = document.getElementById("titleNameInp").value.trim();
+  const desc = document.getElementById("titleDescInp").value.trim();
+  if (!uid || !emoji || !name) { showToast("Alle Felder ausfüllen"); return; }
+  try {
+    const customTitles = { id: "custom_"+Date.now(), emoji, title:name, desc:desc||"Exklusiver Titel" };
+    await updateDoc(doc(db,"users",uid), { customTitle: customTitles, activeTitle: "custom_"+Date.now() });
+    document.getElementById("titleEmojiInp").value = "";
+    document.getElementById("titleNameInp").value = "";
+    document.getElementById("titleDescInp").value = "";
+    showToast("🎖️ Titel vergeben!");
+  } catch(e) { showToast("Fehler: "+e.message); }
+}
+
+window.banUser = async function() {
+  const uid = document.getElementById("banUserSelect").value;
+  const reason = document.getElementById("banReasonInp").value.trim();
+  if (!uid) { showToast("User auswählen"); return; }
+  const user = allUsersCache.find(u=>u.uid===uid);
+  if (!confirm("Willst du " + (user?.name||uid) + " wirklich bannen?")) return;
+  try {
+    await updateDoc(doc(db,"users",uid), { banned:true, banReason:reason||"Kein Grund angegeben", bannedAt:serverTimestamp() });
+    showToast("🚫 User gebannt!");
+    renderCreatorPanel();
+  } catch(e) { showToast("Fehler: "+e.message); }
+}
+
+let allUsersCache = [];
+
+window.unbanUser = async function(uid) {
+  try {
+    await updateDoc(doc(db,"users",uid), {banned:false, banReason:""});
+    showToast("✓ User entbannt!");
+    renderCreatorPanel();
+  } catch(e) { showToast("Fehler: "+e.message); }
 }
 
 </script>
