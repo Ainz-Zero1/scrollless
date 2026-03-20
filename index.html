@@ -1172,6 +1172,7 @@ function getEarnedAchievements(u) {
       // Special titles based on uid directly
       if (a.id === "creator" || a.id === "overlord" || a.id === "masterzero") return isThisUserCreator;
       if (a.id === "gorlock") return u.uid === "dgmla6iqs3hBWT3QG25WjjJRvLJ2";
+      if (a.id === "devilhunter") return u.uid === "n7ingvYaCQhaTC62sUyR6OpOaZG2";
       if (a.id === "owner") return isThisUserOwner;
       // Premium check only for current user
       if (a.premium && u.uid === currentUser?.uid && !isPremium) return false;
