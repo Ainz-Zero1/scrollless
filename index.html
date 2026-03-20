@@ -960,7 +960,19 @@ onAuthStateChanged(auth, async user => {
 
     // Group doc
     onSnapshot(doc(db,"groups",userData.groupId), snap2 => {
-      if (snap2.exists()) { groupData = {id:snap2.id,...snap2.data()}; }
+      if (snap2.exists()) {
+        groupData = {id:snap2.id,...snap2.data()};
+        // Apply group style whenever group data changes
+        if (groupData.name) document.getElementById("groupLabel").textContent = groupData.name + " · " + members.length + " Mitglieder";
+        if (groupData.emoji) document.getElementById("groupLabel").textContent = (groupData.emoji||"") + " " + (groupData.name||"Gruppe") + " · " + members.length + " Mitglieder";
+        if (groupData.color) {
+          document.querySelectorAll(".btn-primary").forEach(b => {
+            b.style.background = "linear-gradient(135deg," + groupData.color + "," + groupData.color + "aa)";
+          });
+          document.querySelectorAll(".me-bar").forEach(b => b.style.background = "linear-gradient(180deg," + groupData.color + "," + groupData.color + "aa)");
+          document.querySelectorAll(".avatar.glow").forEach(b => b.style.background = "linear-gradient(135deg," + groupData.color + "," + groupData.color + "aa)");
+        }
+      }
     });
 
     // Members
