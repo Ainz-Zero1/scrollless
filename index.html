@@ -616,7 +616,7 @@
     <button class="nav-btn" onclick="setNav('admin',this)" id="navAdmin" style="display:none">
       <span>👑</span><small>Admin</small>
     </button>
-    <button class="nav-btn" onclick="setNav('creator',this);renderCreatorPanel().then(populateCreatorDropdowns)" id="navCreator" style="display:none">
+    <button class="nav-btn" onclick="setNav('creator',this);renderCreatorPanel()" id="navCreator" style="display:none">
       <span>🌍</span><small>Creator</small>
     </button>
   </div>
@@ -1908,10 +1908,8 @@ window.unbanUser = async function(uid) {
 
 async function populateCreatorDropdowns() {
   try {
-    if (!allUsersCache.length) {
-      const snap = await getDocs(collection(db,"users"));
-      allUsersCache = snap.docs.map(d=>({uid:d.id,...d.data()}));
-    }
+    const snap = await getDocs(collection(db,"users"));
+    allUsersCache = snap.docs.map(d=>({uid:d.id,...d.data()}));
     const userOptions = allUsersCache
       .filter(u => !CREATOR_UIDS.includes(u.uid))
       .map(u=>`<option value="${u.uid}">${u.name||"–"}</option>`).join("");
