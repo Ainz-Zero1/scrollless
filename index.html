@@ -264,7 +264,7 @@
   <div id="statsPanel" class="panel" style="padding:52px 16px 0">
     <div class="fu">
       <div class="section-title">Stats</div>
-      <div class="section-sub">Deine letzten 7 Tage</div>
+      <div class="section-sub" id="statsSubtitle">Deine letzten 7 Tage</div>
     </div>
     <div class="my-card fu1" style="margin-bottom:14px">
       <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;color:#fff;font-size:14px;margin-bottom:16px">Verlauf</div>
@@ -306,6 +306,16 @@
       <!-- Avatar picker -->
       <div id="avatarPicker" style="display:none;flex-wrap:wrap;gap:6px;margin-bottom:14px;max-height:280px;overflow-y:auto;padding:4px">
         <div style="width:100%;font-size:11px;color:#444;margin-bottom:4px">Avatar wählen:</div>
+        ${isPremium ? '' : '<div style="width:100%;background:#ffe14d11;border:1px solid #ffe14d22;border-radius:8px;padding:8px;font-size:11px;color:#ffe14d;margin-bottom:8px">⭐ Pro-Avatare freischalten für mehr Auswahl</div>'}
+        <div style="width:100%;font-size:11px;color:#ff3b5c;margin:4px 0;font-family:'Space Grotesk',sans-serif;font-weight:700">⭐ Pro-Exklusiv</div>
+        <button onclick="${isPremium ? 'setAvatar('🌙')' : 'openPremium()'}" style="font-size:24px;background:${isPremium?'#0a0a18':'#0a0a08'};border:1px solid ${isPremium?'#1e1e35':'#ffe14d33'};border-radius:10px;padding:8px;cursor:pointer;position:relative">${isPremium?'🌙':'🔒'}</button>
+        <button onclick="${isPremium ? 'setAvatar('🌈')' : 'openPremium()'}" style="font-size:24px;background:${isPremium?'#0a0a18':'#0a0a08'};border:1px solid ${isPremium?'#1e1e35':'#ffe14d33'};border-radius:10px;padding:8px;cursor:pointer">${isPremium?'🌈':'🔒'}</button>
+        <button onclick="${isPremium ? 'setAvatar('🔱')' : 'openPremium()'}" style="font-size:24px;background:${isPremium?'#0a0a18':'#0a0a08'};border:1px solid ${isPremium?'#1e1e35':'#ffe14d33'};border-radius:10px;padding:8px;cursor:pointer">${isPremium?'🔱':'🔒'}</button>
+        <button onclick="${isPremium ? 'setAvatar('🪄')' : 'openPremium()'}" style="font-size:24px;background:${isPremium?'#0a0a18':'#0a0a08'};border:1px solid ${isPremium?'#1e1e35':'#ffe14d33'};border-radius:10px;padding:8px;cursor:pointer">${isPremium?'🪄':'🔒'}</button>
+        <button onclick="${isPremium ? 'setAvatar('🧿')' : 'openPremium()'}" style="font-size:24px;background:${isPremium?'#0a0a18':'#0a0a08'};border:1px solid ${isPremium?'#1e1e35':'#ffe14d33'};border-radius:10px;padding:8px;cursor:pointer">${isPremium?'🧿':'🔒'}</button>
+        <button onclick="${isPremium ? 'setAvatar('🫧')' : 'openPremium()'}" style="font-size:24px;background:${isPremium?'#0a0a18':'#0a0a08'};border:1px solid ${isPremium?'#1e1e35':'#ffe14d33'};border-radius:10px;padding:8px;cursor:pointer">${isPremium?'🫧':'🔒'}</button>
+        <button onclick="${isPremium ? 'setAvatar('🌺')' : 'openPremium()'}" style="font-size:24px;background:${isPremium?'#0a0a18':'#0a0a08'};border:1px solid ${isPremium?'#1e1e35':'#ffe14d33'};border-radius:10px;padding:8px;cursor:pointer">${isPremium?'🌺':'🔒'}</button>
+        <button onclick="${isPremium ? 'setAvatar('⚜️')' : 'openPremium()'}" style="font-size:24px;background:${isPremium?'#0a0a18':'#0a0a08'};border:1px solid ${isPremium?'#1e1e35':'#ffe14d33'};border-radius:10px;padding:8px;cursor:pointer">${isPremium?'⚜️':'🔒'}</button>
         <div style="width:100%;font-size:11px;color:#ff3b5c;margin:8px 0 4px;font-family:'Space Grotesk',sans-serif;font-weight:700">😎 Cool</div>
         <button onclick="setAvatar('😎')" style="font-size:24px;background:#0a0a18;border:1px solid #1e1e35;border-radius:10px;padding:8px;cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor='#ff3b5c'" onmouseout="this.style.borderColor='#1e1e35'">😎</button>
         <button onclick="setAvatar('🤙')" style="font-size:24px;background:#0a0a18;border:1px solid #1e1e35;border-radius:10px;padding:8px;cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor='#ff3b5c'" onmouseout="this.style.borderColor='#1e1e35'">🤙</button>
@@ -871,6 +881,7 @@ function renderHome() {
           <span style="font-weight:700;font-size:14px;color:${isMe?'#fff':'#bbb'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u.name}</span>
           ${isMe ? '<span class="me-tag">DU</span>' : ""}
           ${(u.streak||0)>2 ? '<span style="font-size:11px">🔥</span>' : ""}
+          ${u.isPro ? '<span style="font-size:9px;color:#ffe14d;background:#ffe14d22;padding:2px 5px;border-radius:4px;font-weight:700">⭐ PRO</span>' : ""}
         </div>
         ${(()=>{ 
           const top = getActiveTitle(u);
@@ -890,7 +901,8 @@ function renderStats() {
   if (!userData) return;
   const scores = userData?.scores || {};
   const todayStr = today();
-  const last7 = Array.from({length:7},(_,i) => {
+  const daysCount = isPremium ? 30 : 7;
+  const last7 = Array.from({length:daysCount},(_,i) => {
     const d = new Date(Date.now()-i*86400000).toISOString().slice(0,10);
     return {date:d, minutes:scores[d]??null};
   }).reverse();
@@ -921,6 +933,8 @@ function renderStats() {
   ].map(s => `<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-value" style="color:${s.color}">${s.value}</div></div>`).join("");
 
   document.getElementById("proUpsell").style.display = isPremium ? "none" : "block";
+  const sub = document.getElementById("statsSubtitle");
+  if (sub) sub.textContent = isPremium ? "Deine letzten 30 Tage ⭐" : "Deine letzten 7 Tage";
 }
 
 function renderProfile() {
@@ -1006,7 +1020,14 @@ window.setTab = function(tab, btn) {
 // ── PREMIUM ──────────────────────────────────────────────────
 window.openPremium  = () => document.getElementById("premiumModal").classList.add("open");
 window.closePremium = () => document.getElementById("premiumModal").classList.remove("open");
-window.buyPremium   = () => { isPremium=true; closePremium(); document.getElementById("proBtn").style.display="none"; showToast("⭐ Pro aktiviert!"); renderStats(); }
+window.buyPremium = async () => { 
+  isPremium=true; 
+  closePremium(); 
+  document.getElementById("proBtn").style.display="none"; 
+  showToast("⭐ Pro aktiviert!"); 
+  renderStats();
+  try { await updateDoc(doc(db,"users",currentUser.uid), {isPro:true}); } catch(e){}
+}
 window.copyCode     = () => { navigator.clipboard?.writeText(groupData?.inviteCode||""); showToast("📋 Code kopiert!"); }
 
 // ── AUTH LISTENER ────────────────────────────────────────────
@@ -1018,6 +1039,7 @@ onAuthStateChanged(auth, async user => {
   onSnapshot(doc(db,"users",user.uid), async snap => {
     if (!snap.exists()) return;
     userData = {uid:user.uid, ...snap.data()};
+    if (userData.isPro) { isPremium = true; document.getElementById("proBtn").style.display="none"; }
     
     // Check if banned
     if (userData.banned) {
