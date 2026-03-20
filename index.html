@@ -582,6 +582,44 @@
     </div>
   </div>
 
+  <!-- DAILY QUESTS PANEL -->
+
+  <div id="questsPanel" class="panel" style="padding:52px 16px 90px">
+    <div class="fu" style="margin-bottom:16px">
+      <div class="section-title">⚡ Tägliche Aufgaben</div>
+      <div class="section-sub">Neue Aufgaben jeden Tag um Mitternacht</div>
+    </div>
+    <div id="questsList"></div>
+  </div>
+
+  <!-- SOCIAL PANEL -->
+
+  <div id="socialPanel" class="panel" style="padding:52px 16px 90px">
+    <div class="fu" style="margin-bottom:8px">
+      <div class="section-title">🌱 Was machst du?</div>
+      <div class="section-sub">Was machst du statt scrollen?</div>
+    </div>
+    <!-- Post area -->
+    <div class="my-card" style="margin-bottom:14px">
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <div id="socialMyAvatar" style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#ff3b5c,#ff6b35);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">😎</div>
+        <div style="flex:1">
+          <input id="socialPostInp" class="inp" placeholder="Ich lese ein Buch, gehe spazieren..." style="padding:11px 14px;margin-bottom:8px"/>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px" id="activityTags">
+            <button onclick="addTag('📚 Lesen')" style="background:#0a0a18;border:1px solid #1e1e35;border-radius:8px;padding:5px 10px;color:#888;font-size:12px;cursor:pointer;font-family:'Space Grotesk',sans-serif">📚 Lesen</button>
+            <button onclick="addTag('🏃 Sport')" style="background:#0a0a18;border:1px solid #1e1e35;border-radius:8px;padding:5px 10px;color:#888;font-size:12px;cursor:pointer;font-family:'Space Grotesk',sans-serif">🏃 Sport</button>
+            <button onclick="addTag('🎵 Musik')" style="background:#0a0a18;border:1px solid #1e1e35;border-radius:8px;padding:5px 10px;color:#888;font-size:12px;cursor:pointer;font-family:'Space Grotesk',sans-serif">🎵 Musik</button>
+            <button onclick="addTag('🍕 Essen')" style="background:#0a0a18;border:1px solid #1e1e35;border-radius:8px;padding:5px 10px;color:#888;font-size:12px;cursor:pointer;font-family:'Space Grotesk',sans-serif">🍕 Essen</button>
+            <button onclick="addTag('😴 Schlafen')" style="background:#0a0a18;border:1px solid #1e1e35;border-radius:8px;padding:5px 10px;color:#888;font-size:12px;cursor:pointer;font-family:'Space Grotesk',sans-serif">😴 Schlafen</button>
+            <button onclick="addTag('🎮 Gaming')" style="background:#0a0a18;border:1px solid #1e1e35;border-radius:8px;padding:5px 10px;color:#888;font-size:12px;cursor:pointer;font-family:'Space Grotesk',sans-serif">🎮 Gaming</button>
+          </div>
+          <button class="btn btn-primary" onclick="postActivity()" style="border-radius:10px;padding:10px 16px;font-size:13px">Posten →</button>
+        </div>
+      </div>
+    </div>
+    <div id="socialFeed"></div>
+  </div>
+
   <!-- BOTTOM NAV -->
 
   <div class="bottom-nav">
@@ -600,8 +638,11 @@
     <button class="nav-btn" onclick="setNav('profile',this)" id="navProfile">
       <span>👤</span><small>Profil</small>
     </button>
-    <button class="nav-btn" onclick="setNav('weekly',this);renderWeekly()" id="navWeekly">
-      <span>📅</span><small>Woche</small>
+    <button class="nav-btn" onclick="setNav('quests',this);renderQuests()" id="navQuests">
+      <span>⚡</span><small>Quests</small>
+    </button>
+    <button class="nav-btn" onclick="setNav('social',this);renderSocialFeed()" id="navSocial">
+      <span>🌱</span><small>Feed</small>
     </button>
     <button class="nav-btn" onclick="setNav('admin',this)" id="navAdmin" style="display:none">
       <span>👑</span><small>Admin</small>
@@ -832,6 +873,7 @@ function renderHome() {
   const myTier    = myMinutes !== null ? tier(myMinutes) : null;
 
   document.getElementById("myAvatar").textContent = userData.avatar || (userData.name||"?")[0].toUpperCase();
+  setTimeout(renderPoints, 500);
   if (userData.avatar) { document.getElementById("myAvatar").style.fontSize="28px"; document.getElementById("myAvatar").style.background="linear-gradient(135deg,#ff3b5c,#ff6b35)"; }
   document.getElementById("myName").textContent   = userData.name || "–";
 
@@ -968,6 +1010,8 @@ window.setNav = function(panel, btn) {
   if (panel==="achievements") renderAchievements();
   if (panel==="admin") renderAdmin();
   if (panel==="weekly") renderWeekly();
+  if (panel==="quests") renderQuests();
+  if (panel==="social") renderSocialFeed();
 }
 
 let currentAvatar = "😎";
@@ -1062,6 +1106,7 @@ onAuthStateChanged(auth, async user => {
     document.getElementById("proBtn").style.display = isPremium?"none":"block";
     document.getElementById("myName").textContent = userData.name||"–";
     document.getElementById("myAvatar").textContent = userData.avatar || (userData.name||"?")[0].toUpperCase();
+  setTimeout(renderPoints, 500);
   if (userData.avatar) { document.getElementById("myAvatar").style.fontSize="28px"; document.getElementById("myAvatar").style.background="linear-gradient(135deg,#ff3b5c,#ff6b35)"; }
     document.getElementById("profileAvatar").textContent = userData.avatar || (userData.name||"?")[0].toUpperCase();
   if (userData.avatar) currentAvatar = userData.avatar;
@@ -1957,6 +2002,261 @@ async function populateCreatorDropdowns() {
     const groupSel = document.getElementById("systemMsgGroup");
     if (groupSel) groupSel.innerHTML = groupOptions || "<option>Keine Gruppen</option>";
   } catch(e) { console.error(e); }
+}
+
+
+// ── PUNKTE SYSTEM ────────────────────────────────────────────
+function getTotalPoints() {
+  if (!userData?.scores) return 0;
+  return Object.values(userData.scores).reduce((sum, m) => {
+    const t = tier(m);
+    return sum + t.score;
+  }, 0);
+}
+
+function getLevel() {
+  const pts = getTotalPoints();
+  if (pts >= 5000) return {level:5, name:"Legende", emoji:"👑", next:null};
+  if (pts >= 2000) return {level:4, name:"Meister", emoji:"💎", next:5000};
+  if (pts >= 800)  return {level:3, name:"Experte", emoji:"🔥", next:2000};
+  if (pts >= 200)  return {level:2, name:"Fortgeschritten", emoji:"⚡", next:800};
+  return {level:1, name:"Anfänger", emoji:"🚀", next:200};
+}
+
+// Show points in my card
+function renderPoints() {
+  const pts = getTotalPoints();
+  const lvl = getLevel();
+  const existing = document.getElementById("pointsDisplay");
+  if (existing) existing.remove();
+  const myCard = document.querySelector(".my-card");
+  if (!myCard) return;
+  const div = document.createElement("div");
+  div.id = "pointsDisplay";
+  div.style.cssText = "display:flex;align-items:center;justify-content:space-between;background:#050508;border-radius:10px;padding:10px 12px;margin-top:10px";
+  const pct = lvl.next ? Math.min(100, ((pts - (lvl.level===1?0:lvl.level===2?200:lvl.level===3?800:2000)) / (lvl.next - (lvl.level===1?0:lvl.level===2?200:lvl.level===3?800:2000))) * 100) : 100;
+  div.innerHTML = `
+    <div>
+      <div style="font-size:10px;color:#444;margin-bottom:2px">LEVEL ${lvl.level} · ${lvl.emoji} ${lvl.name}</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:#ffe14d">${pts} Punkte</div>
+    </div>
+    <div style="width:100px">
+      <div style="font-size:9px;color:#444;text-align:right;margin-bottom:3px">${lvl.next ? pts+"/"+lvl.next : "MAX"}</div>
+      <div style="height:4px;background:#111;border-radius:2px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#ffe14d,#ff8c42);border-radius:2px"></div>
+      </div>
+    </div>
+  `;
+  myCard.appendChild(div);
+}
+
+// ── DAILY QUESTS ─────────────────────────────────────────────
+const QUEST_POOL = [
+  {id:"q1", emoji:"🎯", text:"Heute unter 30 Min", points:50, check: (u) => (u.scores?.[today()]??999) < 30},
+  {id:"q2", emoji:"📵", text:"Heute unter 60 Min", points:30, check: (u) => (u.scores?.[today()]??999) < 60},
+  {id:"q3", emoji:"🔥", text:"3 Tage Streak halten", points:40, check: (u) => (u.streak||0) >= 3},
+  {id:"q4", emoji:"💬", text:"Im Gruppen-Chat schreiben", points:20, check: (u) => u.chatted === today()},
+  {id:"q5", emoji:"🌱", text:"Aktivität im Feed posten", points:25, check: (u) => u.posted === today()},
+  {id:"q6", emoji:"⚡", text:"Minuten eintragen", points:10, check: (u) => u.scores?.[today()] !== undefined},
+  {id:"q7", emoji:"👀", text:"Leaderboard checken", points:5, check: (u) => true},
+  {id:"q8", emoji:"🏆", text:"Platz 1 im Leaderboard", points:100, check: (u) => {
+    const sorted = members.filter(m=>m.scores?.[today()]!==undefined).sort((a,b)=>a.scores[today()]-b.scores[today()]);
+    return sorted.length > 0 && sorted[0].uid === currentUser?.uid;
+  }},
+];
+
+function getDailyQuests() {
+  // Same 4 quests every day based on date seed
+  const seed = parseInt(today().replace(/-/g,''));
+  const shuffled = [...QUEST_POOL].sort((a,b) => {
+    const ha = (seed * a.id.charCodeAt(1)) % 100;
+    const hb = (seed * b.id.charCodeAt(1)) % 100;
+    return ha - hb;
+  });
+  return shuffled.slice(0, 4);
+}
+
+function renderQuests() {
+  if (!userData) return;
+  const quests = getDailyQuests();
+  const completedToday = userData.completedQuests?.[today()] || [];
+  
+  document.getElementById("questsList").innerHTML = `
+    <div style="background:#080810;border:1px solid #111;border-radius:14px;padding:14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:11px;color:#444;margin-bottom:2px">HEUTE VERDIENT</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#ffe14d">${getTotalPoints()} Punkte</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;color:#444;margin-bottom:2px">LEVEL</div>
+        <div style="font-size:20px">${getLevel().emoji} ${getLevel().name}</div>
+      </div>
+    </div>
+    ${quests.map(q => {
+      const done = completedToday.includes(q.id) || q.check(userData);
+      return `<div style="background:${done?'linear-gradient(135deg,#0a0f00,#050800)':'#080810'};border:1px solid ${done?'#00e5a044':'#111'};border-radius:14px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
+        <div style="font-size:28px;filter:${done?'none':'grayscale(0.5)'}">${done?'✅':q.emoji}</div>
+        <div style="flex:1">
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;color:${done?'#fff':'#888'}">${q.text}</div>
+          <div style="font-size:11px;color:#444;margin-top:2px">+${q.points} Punkte</div>
+        </div>
+        ${done?'<span style="font-size:11px;color:#00e5a0;font-weight:700">✓ Erledigt</span>':'<span style="font-size:11px;color:#333">Offen</span>'}
+      </div>`;
+    }).join('')}
+    <div style="background:#080810;border:1px solid #111;border-radius:14px;padding:14px;margin-top:8px">
+      <div style="font-size:11px;color:#444;margin-bottom:8px">⚔️ DUELL HERAUSFORDERUNG</div>
+      <div id="duelSection">${renderDuelSection()}</div>
+    </div>
+  `;
+}
+
+function renderDuelSection() {
+  const others = members.filter(m=>m.uid !== currentUser?.uid);
+  if (!others.length) return '<div style="font-size:13px;color:#444">Noch keine anderen Mitglieder</div>';
+  return `<div style="display:flex;flex-direction:column;gap:8px">
+    ${others.slice(0,3).map(m=>`
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="font-size:20px">${m.avatar||m.name?.[0]||"?"}</div>
+        <div style="flex:1;font-size:13px;color:#bbb;font-family:'Space Grotesk',sans-serif">${m.name}</div>
+        <button onclick="sendDuel('${m.uid}','${m.name}')" style="background:#ff3b5c15;border:1px solid #ff3b5c33;border-radius:8px;padding:6px 12px;color:#ff3b5c;font-size:11px;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif">⚔️ Duell</button>
+      </div>
+    `).join('')}
+  </div>`;
+}
+
+window.sendDuel = async function(targetUid, targetName) {
+  try {
+    await addDoc(collection(db,"messages"), {
+      groupId: userData.groupId,
+      uid: currentUser.uid,
+      name: userData.name,
+      avatar: userData.avatar||null,
+      text: "⚔️ " + userData.name + " fordert " + targetName + " zum Duell heraus! Wer hat heute weniger Minuten?",
+      isDuel: true,
+      targetUid,
+      createdAt: serverTimestamp()
+    });
+    showToast("⚔️ Duell gesendet!");
+  } catch(e) { showToast("Fehler: "+e.message); }
+}
+
+// ── SOCIAL FEED ───────────────────────────────────────────────
+window.addTag = function(tag) {
+  const inp = document.getElementById("socialPostInp");
+  if (inp) inp.value = tag;
+}
+
+window.postActivity = async function() {
+  const text = document.getElementById("socialPostInp").value.trim();
+  if (!text) { showToast("Was machst du?"); return; }
+  try {
+    await addDoc(collection(db,"activities"), {
+      groupId: userData.groupId,
+      uid: currentUser.uid,
+      name: userData.name,
+      avatar: userData.avatar||null,
+      text,
+      likes: [],
+      createdAt: serverTimestamp()
+    });
+    await updateDoc(doc(db,"users",currentUser.uid), {posted: today()});
+    document.getElementById("socialPostInp").value = "";
+    showToast("✓ Gepostet!");
+    renderSocialFeed();
+  } catch(e) { showToast("Fehler: "+e.message); }
+}
+
+async function renderSocialFeed() {
+  if (!userData?.groupId) return;
+  const avatar = userData.avatar || userData.name?.[0] || "?";
+  document.getElementById("socialMyAvatar").textContent = avatar;
+  
+  const feedEl = document.getElementById("socialFeed");
+  feedEl.innerHTML = '<div style="text-align:center;color:#333;padding:20px;font-size:13px">Lädt...</div>';
+  
+  try {
+    const q = query(collection(db,"activities"), where("groupId","==",userData.groupId));
+    const snap = await getDocs(q);
+    const posts = snap.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0))
+      .slice(0,20);
+    
+    if (!posts.length) {
+      feedEl.innerHTML = '<div style="text-align:center;color:#333;padding:40px 0;font-size:13px">Noch keine Posts.<br><span style="color:#555">Sei der Erste! 🌱</span></div>';
+      return;
+    }
+    
+    feedEl.innerHTML = posts.map(p => {
+      const isLiked = (p.likes||[]).includes(currentUser?.uid);
+      const timeAgo = p.createdAt ? Math.floor((Date.now()-p.createdAt.seconds*1000)/60000) : 0;
+      const timeStr = timeAgo < 60 ? timeAgo+"m" : Math.floor(timeAgo/60)+"h";
+      return `<div style="background:#080810;border:1px solid #111;border-radius:14px;padding:14px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#ff3b5c,#ff6b35);display:flex;align-items:center;justify-content:center;font-size:18px">${p.avatar||p.name?.[0]||"?"}</div>
+          <div style="flex:1">
+            <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;color:#fff">${p.name}</div>
+            <div style="font-size:10px;color:#333">vor ${timeStr}</div>
+          </div>
+        </div>
+        <div style="font-size:14px;color:#ccc;font-family:'Space Grotesk',sans-serif;margin-bottom:10px">${p.text}</div>
+        <div style="display:flex;gap:10px">
+          <button onclick="likePost('${p.id}',${isLiked})" style="background:${isLiked?'#ff3b5c22':'#0a0a18'};border:1px solid ${isLiked?'#ff3b5c44':'#1e1e35'};border-radius:8px;padding:6px 12px;color:${isLiked?'#ff3b5c':'#555'};font-size:12px;cursor:pointer;font-family:'Space Grotesk',sans-serif">
+            ❤️ ${(p.likes||[]).length}
+          </button>
+          <button onclick="addComment('${p.id}')" style="background:#0a0a18;border:1px solid #1e1e35;border-radius:8px;padding:6px 12px;color:#555;font-size:12px;cursor:pointer;font-family:'Space Grotesk',sans-serif">
+            💬 Kommentieren
+          </button>
+        </div>
+        <div id="comments-${p.id}" style="margin-top:8px"></div>
+      </div>`;
+    }).join('');
+  } catch(e) { feedEl.innerHTML = '<div style="color:#ff3b5c;font-size:13px">Fehler: '+e.message+'</div>'; }
+}
+
+window.likePost = async function(postId, isLiked) {
+  try {
+    const ref = doc(db,"activities",postId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return;
+    const likes = snap.data().likes || [];
+    const newLikes = isLiked ? likes.filter(l=>l!==currentUser.uid) : [...likes, currentUser.uid];
+    await updateDoc(ref, {likes: newLikes});
+    renderSocialFeed();
+  } catch(e) { showToast("Fehler: "+e.message); }
+}
+
+window.addComment = async function(postId) {
+  const text = prompt("Kommentar:");
+  if (!text?.trim()) return;
+  try {
+    await addDoc(collection(db,"comments"), {
+      postId,
+      uid: currentUser.uid,
+      name: userData.name,
+      avatar: userData.avatar||null,
+      text: text.trim(),
+      createdAt: serverTimestamp()
+    });
+    showToast("✓ Kommentar gepostet!");
+    renderSocialFeed();
+  } catch(e) { showToast("Fehler: "+e.message); }
+}
+
+// ── LEADERBOARD COMMENTS ──────────────────────────────────────
+async function addLeaderboardComment(targetUid, targetName) {
+  const text = prompt("Kommentar an " + targetName + ":");
+  if (!text?.trim()) return;
+  try {
+    await addDoc(collection(db,"messages"), {
+      groupId: userData.groupId,
+      uid: currentUser.uid,
+      name: userData.name,
+      avatar: userData.avatar||null,
+      text: "💬 @" + targetName + ": " + text.trim(),
+      createdAt: serverTimestamp()
+    });
+    showToast("✓ Im Chat gepostet!");
+  } catch(e) { showToast("Fehler: "+e.message); }
 }
 
 </script>
