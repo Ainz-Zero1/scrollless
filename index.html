@@ -397,7 +397,12 @@
         <button onclick="setAvatar('🏄')" style="font-size:24px;background:#0a0a18;border:1px solid #1e1e35;border-radius:10px;padding:8px;cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor='#ff3b5c'" onmouseout="this.style.borderColor='#1e1e35'">🏄</button>
         <button onclick="setAvatar('🚴')" style="font-size:24px;background:#0a0a18;border:1px solid #1e1e35;border-radius:10px;padding:8px;cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor='#ff3b5c'" onmouseout="this.style.borderColor='#1e1e35'">🚴</button>
       </div>
-      <div style="background:#050508;border-radius:12px;padding:12px 14px" id="profileGroup"></div>
+      <div style="background:#050508;border-radius:12px;padding:12px 14px;margin-bottom:12px" id="profileGroup"></div>
+      <div>
+        <div style="font-size:11px;color:#444;margin-bottom:6px;font-family:'Space Grotesk',sans-serif;font-weight:700">DEINE BIO</div>
+        <textarea id="bioInp" placeholder="Schreib was über dich... (z.B. Ich bin Leon, 16, aus Berlin 🇩🇪)" style="width:100%;background:#050508;border:1px solid #1e1e35;border-radius:10px;padding:12px;color:#fff;font-size:13px;font-family:'Space Grotesk',sans-serif;outline:none;resize:none;min-height:80px;transition:border 0.2s" onfocus="this.style.borderColor='#ff3b5c66'" onblur="this.style.borderColor='#1e1e35'"></textarea>
+        <button onclick="saveBio()" style="margin-top:8px;background:linear-gradient(135deg,#ff3b5c,#ff6b35);border:none;border-radius:10px;padding:10px 20px;color:#fff;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;cursor:pointer">✓ Bio speichern</button>
+      </div>
     </div>
     <div style="margin-bottom:14px" id="profileProBtn">
       <button class="btn btn-yellow" onclick="openPremium()">⭐ Auf Pro upgraden – 0,99€/Monat</button>
@@ -920,7 +925,7 @@ function renderHome() {
     const isMe = u.uid === currentUser.uid;
     const t2   = tier(u.minutes);
     const pct  = Math.min(100,(u.minutes/180)*100);
-    return `<div class="leaderboard-row ${isMe?'me':'other'}">
+    return `<div class="leaderboard-row ${isMe?'me':'other'}" onclick="${!isMe?`openUserProfile('${u.uid}')`:''}" style="cursor:${!isMe?'pointer':'default'}">
       ${isMe ? '<div class="me-bar"></div>' : ""}
       <div style="width:28px;text-align:center;flex-shrink:0;font-family:'Syne',sans-serif;font-size:${i<3?17:12}px;color:${i<3?t2.color:'#222'};font-weight:800">${rEmoji(i+1)}</div>
       <div class="avatar ${isMe?'glow':'dark'}" style="width:36px;height:36px;font-size:${u.avatar?'20px':'14px'};${isMe?'color:#fff;border:2px solid #ff3b5c':'color:#555;border:2px solid #1e1e35'}">${u.avatar||(u.name||"?")[0].toUpperCase()}</div>
@@ -987,6 +992,7 @@ function renderStats() {
 
 function renderProfile() {
   if (!userData) return;
+  renderProfileBio();
   document.getElementById("profileAvatar").textContent = userData.avatar || (userData.name||"?")[0].toUpperCase();
   if (userData.avatar) currentAvatar = userData.avatar;
   document.getElementById("profileName").textContent   = userData.name||"–";
@@ -2260,6 +2266,55 @@ async function addLeaderboardComment(targetUid, targetName) {
 }
 
 </script>
+
+<!-- USER PROFILE MODAL -->
+
+<div id="userProfileModal" style="position:fixed;inset:0;background:#000c;z-index:1000;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)" onclick="closeUserProfile()">
+  <div onclick="event.stopPropagation()" style="width:100%;max-width:480px;background:#0a0a18;border-radius:24px 24px 0 0;padding:28px 24px 48px;border:1px solid #1e1e35;animation:slideUp 0.3s ease">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div id="modalAvatar" style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#ff3b5c,#ff6b35);display:flex;align-items:center;justify-content:center;font-size:28px;border:2px solid #ff3b5c;box-shadow:0 0 14px #ff3b5c55">?</div>
+        <div>
+          <div id="modalName" style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#fff"></div>
+          <div id="modalTitle" style="font-size:12px;color:#555;margin-top:2px"></div>
+        </div>
+      </div>
+      <button onclick="closeUserProfile()" style="background:none;border:none;color:#444;font-size:20px;cursor:pointer">✕</button>
+    </div>
+
+```
+<!-- Bio -->
+<div id="modalBio" style="background:#050508;border-radius:12px;padding:14px;margin-bottom:14px;font-size:14px;color:#888;font-family:'Space Grotesk',sans-serif;font-style:italic;display:none"></div>
+
+<!-- Stats -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
+  <div style="background:#050508;border-radius:12px;padding:12px;text-align:center">
+    <div id="modalStreak" style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#ffe14d"></div>
+    <div style="font-size:10px;color:#333;margin-top:2px">Streak 🔥</div>
+  </div>
+  <div style="background:#050508;border-radius:12px;padding:12px;text-align:center">
+    <div id="modalPoints" style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#4d9fff"></div>
+    <div style="font-size:10px;color:#333;margin-top:2px">Punkte</div>
+  </div>
+  <div style="background:#050508;border-radius:12px;padding:12px;text-align:center">
+    <div id="modalToday" style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#00e5a0"></div>
+    <div style="font-size:10px;color:#333;margin-top:2px">Heute</div>
+  </div>
+</div>
+
+<!-- Achievements -->
+<div id="modalAchievements" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px"></div>
+
+<!-- Actions -->
+<div style="display:flex;gap:10px">
+  <button id="modalDuelBtn" style="flex:1;background:#ff3b5c15;border:1px solid #ff3b5c33;border-radius:12px;padding:12px;color:#ff3b5c;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;cursor:pointer">⚔️ Duell</button>
+  <button id="modalReactionBtn" style="flex:1;background:#0a0a18;border:1px solid #1e1e35;border-radius:12px;padding:12px;color:#888;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;cursor:pointer">😄 Reaction</button>
+  <button id="modalCommentBtn" style="flex:1;background:#0a0a18;border:1px solid #1e1e35;border-radius:12px;padding:12px;color:#888;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;cursor:pointer">💬 Chat</button>
+</div>
+```
+
+  </div>
+</div>
 
 </body>
 </html>
