@@ -407,11 +407,17 @@
     </div>
     <div id="groupSwitchArea" style="display:none;margin-bottom:14px">
       <div style="background:#0a0a18;border:1px solid #1e1e35;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px">
-        <div style="font-size:13px;color:#666">Neuer Einladungscode:</div>
-        <input id="switchCodeInp" class="inp" placeholder="Code eingeben (z.B. AB12CD)" style="padding:11px 14px"/>
-        <div id="switchErr" style="color:#ff3b5c;font-size:13px;display:none"></div>
-        <button class="btn btn-primary" onclick="switchGroup()" style="border-radius:10px">Beitreten →</button>
-        <button onclick="createNewGroup()" style="background:none;border:none;color:#555;font-size:13px;cursor:pointer;font-family:'Space Grotesk',sans-serif">+ Neue Gruppe erstellen</button>
+        <!-- My groups list -->
+        <div style="font-size:11px;color:#444;font-family:'Space Grotesk',sans-serif;font-weight:700">DEINE GRUPPEN</div>
+        <div id="myGroupsList" style="display:flex;flex-direction:column;gap:8px"></div>
+        <!-- Divider -->
+        <div style="border-top:1px solid #1e1e35;padding-top:10px">
+          <div style="font-size:11px;color:#444;font-family:'Space Grotesk',sans-serif;font-weight:700;margin-bottom:8px">NEUE GRUPPE</div>
+          <input id="switchCodeInp" class="inp" placeholder="Einladungscode eingeben" style="padding:11px 14px;margin-bottom:8px"/>
+          <div id="switchErr" style="color:#ff3b5c;font-size:12px;display:none;margin-bottom:4px"></div>
+          <button class="btn btn-primary" onclick="switchGroup()" style="border-radius:10px;margin-bottom:8px">Beitreten →</button>
+          <button onclick="createNewGroup()" style="background:none;border:none;color:#555;font-size:13px;cursor:pointer;font-family:'Space Grotesk',sans-serif;width:100%;padding:4px">+ Neue Gruppe erstellen</button>
+        </div>
       </div>
     </div>
     <button class="btn btn-ghost" onclick="handleSignOut()" style="border:1px solid #ff3b5c33;color:#ff3b5c;background:#ff3b5c15">Ausloggen</button>
@@ -1202,9 +1208,53 @@ function showReactionPicker(targetUid, targetName) {
 
 
 // ── GRUPPE WECHSELN ───────────────────────────────────────────
-window.toggleGroupSwitch = function() {
+window.toggleGroupSwitch = async function() {
   const a = document.getElementById("groupSwitchArea");
-  a.style.display = a.style.display === "none" ? "block" : "none";
+  const isOpen = a.style.display !== "none";
+  a.style.display = isOpen ? "none" : "block";
+  if (!isOpen) await loadMyGroups();
+}
+
+async function loadMyGroups() {
+  const list = document.getElementById("myGroupsList");
+  if (!list) return;
+  list.innerHTML = '<div style="font-size:12px;color:#444">Lädt...</div>';
+  try {
+    // Find all groups where user is a member
+    const q = query(collection(db,"groups"), where("members","array-contains",currentUser.uid));
+    const snap = await getDocs(q);
+    const groups = snap.docs.map(d=>({id:d.id,...d.data()}));
+    
+    if (groups.length === 0) {
+      list.innerHTML = '<div style="font-size:12px;color:#444">Noch in keiner Gruppe</div>';
+      return;
+    }
+    
+    list.innerHTML = groups.map(g => {
+      const isActive = g.id === userData?.groupId;
+      const memberCount = (g.members||[]).length;
+      return `<button onclick="switchToGroup('${g.id}')" style="display:flex;align-items:center;gap:12px;background:${isActive?'linear-gradient(135deg,#ff3b5c22,#ff6b3511)':'#050508'};border:1px solid ${isActive?'#ff3b5c44':'#1e1e35'};border-radius:12px;padding:12px;cursor:pointer;text-align:left;width:100%;transition:all 0.15s">
+        <span style="font-size:22px">${g.emoji||'👥'}</span>
+        <div style="flex:1">
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:${isActive?'#fff':'#bbb'}">${g.name||'Gruppe'}</div>
+          <div style="font-size:11px;color:#444">${memberCount} Mitglieder · Code: ${g.inviteCode}</div>
+        </div>
+        ${isActive?'<span style="font-size:10px;color:#ff3b5c;background:#ff3b5c22;padding:3px 8px;border-radius:6px;font-weight:700">AKTIV</span>':'<span style="font-size:12px;color:#444">→</span>'}
+      </button>`;
+    }).join('');
+  } catch(e) { list.innerHTML = '<div style="font-size:12px;color:#ff3b5c">Fehler: '+e.message+'</div>'; }
+}
+
+window.switchToGroup = async function(groupId) {
+  if (groupId === userData?.groupId) { 
+    showToast("Du bist bereits in dieser Gruppe"); 
+    return; 
+  }
+  try {
+    await updateDoc(doc(db,"users",currentUser.uid), {groupId});
+    document.getElementById("groupSwitchArea").style.display = "none";
+    showToast("✓ Gruppe gewechselt!");
+  } catch(e) { showToast("Fehler: "+e.message); }
 }
 
 window.switchGroup = async function() {
