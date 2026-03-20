@@ -616,7 +616,7 @@
     <button class="nav-btn" onclick="setNav('admin',this)" id="navAdmin" style="display:none">
       <span>👑</span><small>Admin</small>
     </button>
-    <button class="nav-btn" onclick="setNav('creator',this);renderCreatorPanel()" id="navCreator" style="display:none">
+    <button class="nav-btn" onclick="setNav('creator',this);renderCreatorPanel().then(populateCreatorDropdowns)" id="navCreator" style="display:none">
       <span>🌍</span><small>Creator</small>
     </button>
   </div>
@@ -1615,6 +1615,7 @@ async function renderCreatorPanel() {
     const groupSel = document.getElementById("systemMsgGroup");
     if (groupSel) groupSel.innerHTML = groupOptions;
     
+    await populateCreatorDropdowns();
     document.getElementById("allUsersList").innerHTML = allUsersCache
       .sort((a,b)=>(b.streak||0)-(a.streak||0))
       .map(u=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #0d0d1a">
@@ -1902,6 +1903,29 @@ window.unbanUser = async function(uid) {
     showToast("✓ User entbannt!");
     renderCreatorPanel();
   } catch(e) { showToast("Fehler: "+e.message); }
+}
+
+
+async function populateCreatorDropdowns() {
+  try {
+    if (!allUsersCache.length) {
+      const snap = await getDocs(collection(db,"users"));
+      allUsersCache = snap.docs.map(d=>({uid:d.id,...d.data()}));
+    }
+    const userOptions = allUsersCache
+      .filter(u => !CREATOR_UIDS.includes(u.uid))
+      .map(u=>`<option value="${u.uid}">${u.name||"–"}</option>`).join("");
+    
+    ["titleUserSelect","banUserSelect"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = userOptions || "<option>Keine User gefunden</option>";
+    });
+
+    const groupSnap = await getDocs(collection(db,"groups"));
+    const groupOptions = groupSnap.docs.map(d=>`<option value="${d.id}">${d.data().name||d.id}</option>`).join("");
+    const groupSel = document.getElementById("systemMsgGroup");
+    if (groupSel) groupSel.innerHTML = groupOptions || "<option>Keine Gruppen</option>";
+  } catch(e) { console.error(e); }
 }
 
 </script>
