@@ -5,6 +5,12 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Scrollless</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="scrollless">
+  <meta name="theme-color" content="#050508">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
   <style>
@@ -917,7 +923,7 @@ function renderHome() {
   }
 
   if (sorted.length === 0) {
-    document.getElementById("leaderboard").innerHTML = "<div style='text-align:center;padding:40px 0;color:#333;font-size:14px'>Noch hat niemand seine Minuten eingetragen.<br><span style='color:#555'>Sei der Erste! 👆</span></div>";
+    document.getElementById("leaderboard").innerHTML = renderEmptyLeaderboard();
     return;
   }
 
@@ -1188,7 +1194,7 @@ async function renderChat() {
     const container = document.getElementById("chatMessages");
     if (!container) return;
     container.innerHTML = msgs.length === 0 
-      ? '<div style="text-align:center;color:#333;padding:40px 0;font-size:14px">Noch keine Nachrichten.<br><span style="color:#555">Sei der Erste! 👋</span></div>'
+      ? renderEmptyChat()
       : msgs.map(m => {
           const isMe = m.uid === currentUser?.uid;
           return `<div style="display:flex;flex-direction:column;align-items:${isMe?'flex-end':'flex-start'};gap:2px">
@@ -2188,7 +2194,7 @@ async function renderSocialFeed() {
       .slice(0,20);
     
     if (!posts.length) {
-      feedEl.innerHTML = '<div style="text-align:center;color:#333;padding:40px 0;font-size:13px">Noch keine Posts.<br><span style="color:#555">Sei der Erste! 🌱</span></div>';
+      feedEl.innerHTML = renderEmptyFeed();
       return;
     }
     
@@ -2313,6 +2319,57 @@ async function addLeaderboardComment(targetUid, targetName) {
 </div>
 ```
 
+  </div>
+</div>
+
+<!-- ONBOARDING OVERLAY -->
+
+<div id="onboardingOverlay" style="position:fixed;inset:0;background:#050508;z-index:2000;display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px">
+  <div id="onboardingStep1" style="text-align:center;animation:fadeUp 0.5s ease">
+    <div style="font-size:64px;margin-bottom:20px">📵</div>
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:32px;color:#fff;margin-bottom:12px;letter-spacing:-1px">Willkommen bei<br>scroll<span style="background:linear-gradient(135deg,#ff3b5c,#ff6b35);-webkit-background-clip:text;-webkit-text-fill-color:transparent">less</span></div>
+    <p style="font-family:'Space Grotesk',sans-serif;color:#444;font-size:15px;margin-bottom:40px;line-height:1.6">Verbringe weniger Zeit am Handy.<br>Konkurriere mit deinen Freunden.</p>
+    <button onclick="nextOnboarding(2)" style="background:linear-gradient(135deg,#ff3b5c,#ff6b35);border:none;border-radius:16px;padding:16px 48px;color:#fff;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;cursor:pointer">Los geht's →</button>
+  </div>
+
+  <div id="onboardingStep2" style="text-align:center;display:none;animation:fadeUp 0.5s ease">
+    <div style="font-size:64px;margin-bottom:20px">🏆</div>
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:#fff;margin-bottom:12px">So funktioniert's</div>
+    <div style="text-align:left;background:#0a0a18;border:1px solid #1e1e35;border-radius:16px;padding:20px;margin-bottom:32px;width:100%;max-width:320px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <span style="font-size:24px">✏️</span>
+        <div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;color:#fff;font-size:14px">Minuten eintragen</div>
+          <div style="font-size:12px;color:#444">Wie lange warst du heute am Handy?</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <span style="font-size:24px">📊</span>
+        <div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;color:#fff;font-size:14px">Rangliste sehen</div>
+          <div style="font-size:12px;color:#444">Weniger = besser im Ranking</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:24px">🏅</span>
+        <div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;color:#fff;font-size:14px">Titel verdienen</div>
+          <div style="font-size:12px;color:#444">Schalte Achievements frei</div>
+        </div>
+      </div>
+    </div>
+    <button onclick="nextOnboarding(3)" style="background:linear-gradient(135deg,#ff3b5c,#ff6b35);border:none;border-radius:16px;padding:16px 48px;color:#fff;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;cursor:pointer">Weiter →</button>
+  </div>
+
+  <div id="onboardingStep3" style="text-align:center;display:none;animation:fadeUp 0.5s ease">
+    <div style="font-size:64px;margin-bottom:20px">👥</div>
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:#fff;margin-bottom:12px">Hol deine Freunde rein</div>
+    <p style="font-family:'Space Grotesk',sans-serif;color:#444;font-size:15px;margin-bottom:32px;line-height:1.6">Teile deinen Gruppencode<br>und compete zusammen!</p>
+    <div id="onboardingCode" style="background:#0a0a18;border:1px solid #ff3b5c33;border-radius:14px;padding:16px;margin-bottom:24px">
+      <div style="font-size:11px;color:#444;margin-bottom:6px">DEIN GRUPPENCODE</div>
+      <div id="onboardingCodeDisplay" style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:#fff;letter-spacing:4px">–</div>
+    </div>
+    <button onclick="finishOnboarding()" style="background:linear-gradient(135deg,#ff3b5c,#ff6b35);border:none;border-radius:16px;padding:16px 48px;color:#fff;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;cursor:pointer">App starten 🚀</button>
   </div>
 </div>
 
